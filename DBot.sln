@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dbot.Telegram", "Dbot.Telegram\Dbot.Telegram.csproj", "{5F38A40F-AFB7-44FA-8CAC-2E938F8BB103}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBot", "DBot\DBot.csproj", "{B2B9859A-4859-41C1-B2AD-35B4F28305A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBot.Shared", "DBot.Shared\DBot.Shared.csproj", "{FC65F4AC-D2DA-492C-A50B-B5A187ED447F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5F38A40F-AFB7-44FA-8CAC-2E938F8BB103}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F38A40F-AFB7-44FA-8CAC-2E938F8BB103}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F38A40F-AFB7-44FA-8CAC-2E938F8BB103}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F38A40F-AFB7-44FA-8CAC-2E938F8BB103}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2B9859A-4859-41C1-B2AD-35B4F28305A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2B9859A-4859-41C1-B2AD-35B4F28305A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2B9859A-4859-41C1-B2AD-35B4F28305A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2B9859A-4859-41C1-B2AD-35B4F28305A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC65F4AC-D2DA-492C-A50B-B5A187ED447F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC65F4AC-D2DA-492C-A50B-B5A187ED447F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC65F4AC-D2DA-492C-A50B-B5A187ED447F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC65F4AC-D2DA-492C-A50B-B5A187ED447F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

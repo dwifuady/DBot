@@ -1,0 +1,10 @@
+{
+    "profiles": {
+      "Dbot.Telegram": {
+        "commandName": "Project",
+        "environmentVariables": {
+          "DOTNET_ENVIRONMENT": "Development"
+        }
+      }
+    }
+  }

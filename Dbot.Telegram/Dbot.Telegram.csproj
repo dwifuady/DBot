@@ -22,4 +22,9 @@
     <ProjectReference Include="..\DBot\DBot.csproj" />
     <ProjectReference Include="..\DBot.Shared\DBot.Shared.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

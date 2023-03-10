@@ -28,7 +28,7 @@ if (environment is not null && environment.Equals("Development", StringCompariso
 
 var configuration = configurationBuilder.Build();
 
-using var log = new LoggerConfiguration()
+await using var log = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 
@@ -36,7 +36,7 @@ var serviceCollections = new ServiceCollection()
     .AddHelloWorld()
     .AddCat()
     .AddOpenAI();
-    
+
 serviceCollections.Configure<AppConfig>(configuration.GetSection("AppConfig"));
 serviceCollections.Configure<OpenAIConfig>(configuration.GetSection("OpenAIConfig"));
 
@@ -56,67 +56,80 @@ var services = serviceProvider.GetServices<ICommand>();
 
 using CancellationTokenSource cts = new();
 
-ReceiverOptions receiverOptions = new()
+var closingEvent = new AutoResetEvent(false);
+
+await Task.Factory.StartNew(async () =>
 {
-    AllowedUpdates = Array.Empty<UpdateType>()
-};
+    ReceiverOptions receiverOptions = new()
+    {
+        AllowedUpdates = Array.Empty<UpdateType>()
+    };
 
-botClient.StartReceiving(
-    updateHandler: HandleUpdateAsync,
-    pollingErrorHandler: HandlePollingErrorAsync,
-    receiverOptions: receiverOptions,
-    cancellationToken: cts.Token
-);
+    botClient.StartReceiving(
+        updateHandler: HandleUpdateAsync,
+        pollingErrorHandler: HandlePollingErrorAsync,
+        receiverOptions: receiverOptions,
+        cancellationToken: cts.Token
+    );
 
-var me = await botClient.GetMeAsync();
+    var me = await botClient.GetMeAsync();
 
-log.Information("Start listening for {UserName}", me.Username);
-Console.ReadLine();
+    log.Information("Start listening for {UserName}", me.Username);
+});
+
+log.Information("Press Ctrl + C to cancel!");
+Console.CancelKeyPress += ((s, a) =>
+{
+    log.Information("Bot stopped. Bye!");
+    closingEvent.Set();
+    cts.Cancel();
+});
+
+closingEvent.WaitOne();
+// Console.ReadLine();
 
 // Send cancellation request to stop bot
-cts.Cancel();
+//cts.Cancel();
 
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     // Only process Message updates: https://core.telegram.org/bots/api#message
-    if (update.Message is not { } message)
+    if (update.Message is not { Text: { } messageText } message)
         return;
     // Only process text messages
-    if (message.Text is not { } messageText)
-        return;
 
     var chatId = message.Chat.Id;
 
     log.Information("Received a '{messageText}' message in chat {chatId}.", messageText, chatId);
 
     var service = services?.FirstOrDefault(x => x.Command.Split('|').Any(c => messageText.Split(" ")[0].Equals(c, StringComparison.InvariantCultureIgnoreCase)));
-    var i = messageText.IndexOf(" ") + 1;
-    
+    var i = messageText.IndexOf(" ", StringComparison.Ordinal) + 1;
+
     if (service is not null)
     {
         var commandResponse = await service.ExecuteCommand(new Request(messageText.Substring(i)));
 
-        if (commandResponse is null)
+        switch (commandResponse)
         {
-            return;
-        }
-
-        if (commandResponse is ITextResponse textResponse)
-        {
-            Message sentMessage = await botClient.SendTextMessageAsync(
-                chatId: chatId,
-                text: textResponse?.Message ?? "",
-                cancellationToken: cancellationToken);
-        }
-        else if (commandResponse is IImageResponse imageResponse)
-        {
-            Message sentMessage = await botClient.SendPhotoAsync(
-                chatId: chatId,
-                photo: imageResponse.SourceUrl,
-                caption: imageResponse.Caption,
-                parseMode: ParseMode.Html,
-                cancellationToken: cancellationToken
-            );
+            case ITextResponse textResponse:
+            {
+                var sentMessage = await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: textResponse?.Message ?? "",
+                    cancellationToken: cancellationToken);
+                break;
+            }
+            case IImageResponse imageResponse:
+            {
+                var sentMessage = await botClient.SendPhotoAsync(
+                    chatId: chatId,
+                    photo: imageResponse.SourceUrl,
+                    caption: imageResponse.Caption,
+                    parseMode: ParseMode.Html,
+                    cancellationToken: cancellationToken
+                );
+                break;
+            }
         }
     }
 
@@ -124,13 +137,13 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 
 Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
 {
-    var ErrorMessage = exception switch
+    var errorMessage = exception switch
     {
         ApiRequestException apiRequestException
             => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
         _ => exception.ToString()
     };
 
-    log.Error(ErrorMessage);
+    log.Error(errorMessage);
     return Task.CompletedTask;
 }

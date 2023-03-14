@@ -21,41 +21,39 @@ if (environment is not null && environment.Equals("Development", StringCompariso
 
 var configuration = configurationBuilder.Build();
 
-await using var log = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateLogger();
-
+// Serilog
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 
+// Bot Services
 var serviceCollections = new ServiceCollection()
     .AddHelloWorld()
     .AddCat()
     .AddOpenAI();
 
+// Chat Receiver
 serviceCollections.AddSingleton<IChatReceiver, TelegramReceiver>();
 
+// Config
 serviceCollections.Configure<AppConfig>(configuration.GetSection("AppConfig"));
 serviceCollections.Configure<OpenAIConfig>(configuration.GetSection("OpenAIConfig"));
 
 var serviceProvider = serviceCollections.BuildServiceProvider();
 
-var receivers = serviceProvider.GetServices<IChatReceiver>();
-
 using CancellationTokenSource cts = new();
-
 var closingEvent = new AutoResetEvent(false);
 
 await Task.Factory.StartNew(async () =>
 {
+    var receivers = serviceProvider.GetServices<IChatReceiver>();
     foreach (var chatReceiver in receivers)
     {
         await chatReceiver.StartReceiving(cts.Token);
     }
 });
 
-log.Information("Press Ctrl + C to cancel!");
+Log.Information("Press Ctrl + C to cancel!");
 Console.CancelKeyPress += ((s, a) =>
 {
     a.Cancel = true;
@@ -64,5 +62,5 @@ Console.CancelKeyPress += ((s, a) =>
 
 closingEvent.WaitOne();
 
-log.Information("Bot stopped. Bye!");
+Log.Information("Bot stopped. Bye!");
 cts.Cancel();

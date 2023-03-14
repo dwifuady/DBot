@@ -1,6 +1,6 @@
 {
     "profiles": {
-      "Dbot.Telegram": {
+      "DBot.Console": {
         "commandName": "Project",
         "environmentVariables": {
           "DOTNET_ENVIRONMENT": "Development"

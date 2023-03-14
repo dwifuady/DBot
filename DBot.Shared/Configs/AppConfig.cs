@@ -1,4 +1,4 @@
-namespace Dbot.Telegram;
+﻿namespace DBot.Shared.Configs;
 
 public class AppConfig
 {

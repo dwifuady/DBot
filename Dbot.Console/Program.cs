@@ -34,6 +34,7 @@ var serviceCollections = new ServiceCollection()
 
 // Chat Receiver
 serviceCollections.AddSingleton<IChatReceiver, TelegramReceiver>();
+serviceCollections.AddSingleton<IChatReceiver, DiscordReceiver>();
 
 // Config
 serviceCollections.Configure<AppConfig>(configuration.GetSection("AppConfig"));

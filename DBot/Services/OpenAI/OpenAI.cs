@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DBot.Shared;
 using Serilog;
 
@@ -28,9 +29,11 @@ public class OpenAI : ICommand
                     0.5,
                     0);
 
-            Log.Information("OpenAI Request {request}", openAIRequest);
+            Log.Information("OpenAI Request {request}", JsonSerializer.Serialize(openAIRequest));
 
             var response = await _openAIApi.ChatCompletion(openAIRequest);
+
+            Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
 
             if (response?.Choices != null)
             {

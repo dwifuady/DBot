@@ -44,7 +44,7 @@ public class TelegramReceiver : IChatReceiver
 
         var me = await botClient.GetMeAsync(cancellationToken);
 
-        Log.Information("Start listening for {UserName}", me.Username);
+        Log.Information("[Telegram] Start listening for {UserName}", me.Username);
     }
 
     private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)

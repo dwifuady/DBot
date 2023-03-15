@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using DBot.Shared;
 
 namespace DBot.Services.HelloWorld;

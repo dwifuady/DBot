@@ -7,4 +7,4 @@ RUN dotnet publish -o /app/published-app
 FROM mcr.microsoft.com/dotnet/sdk:7.0 as runtime
 WORKDIR /app
 COPY --from=build /app/published-app /app
-ENTRYPOINT [ "dotnet", "/app/Dbot.Telegram.dll" ]
+ENTRYPOINT [ "dotnet", "/app/Dbot.Console.dll" ]

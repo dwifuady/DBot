@@ -9,8 +9,8 @@ public class OpenAI : ICommand
     public string Command => "AI|BOT|AI,";
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
-    private const string RoleAssistant = "user";
-    private const string RoleUser = "assistant";
+    private const string RoleAssistant = "assistant";
+    private const string RoleUser = "user";
 
     public OpenAI(IOpenAIApi openAIApi)
     {

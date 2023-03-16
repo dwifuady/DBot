@@ -56,13 +56,13 @@ public class TelegramReceiver : IChatReceiver
 
         var chatId = message.Chat.Id;
 
-        Log.Information("[Telegram] Received a '{messageText}' message in chat {chatId}.", messageText, chatId);
-
         var service = _commands?.FirstOrDefault(x => x.Command.Split('|').Any(c => messageText.Split(" ")[0].Equals(c, StringComparison.InvariantCultureIgnoreCase)));
         var i = messageText.IndexOf(" ", StringComparison.Ordinal) + 1;
 
         if (service is not null)
         {
+            Log.Information("[Telegram] Received a '{messageText}' message from {user} in chat {chatId}.", messageText, message.From?.Username , chatId);
+            
             var commandResponse = await service.ExecuteCommand(new Request(messageText.Substring(i)));
 
             switch (commandResponse)
@@ -72,7 +72,8 @@ public class TelegramReceiver : IChatReceiver
                         var sentMessage = await botClient.SendTextMessageAsync(
                             chatId: chatId,
                             text: textResponse?.Message ?? "",
-                            cancellationToken: cancellationToken);
+                            cancellationToken: cancellationToken, 
+                            replyToMessageId:message.MessageId);
                         break;
                     }
                 case IImageResponse imageResponse:
@@ -82,7 +83,8 @@ public class TelegramReceiver : IChatReceiver
                             photo: imageResponse.SourceUrl,
                             caption: imageResponse.Caption,
                             parseMode: ParseMode.Html,
-                            cancellationToken: cancellationToken
+                            cancellationToken: cancellationToken,
+                            replyToMessageId: message.MessageId
                         );
                         break;
                     }

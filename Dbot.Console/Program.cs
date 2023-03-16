@@ -7,11 +7,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
+
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 
 var configurationBuilder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables();
 
 if (environment is not null && environment.Equals("Development", StringComparison.InvariantCultureIgnoreCase))
@@ -23,7 +25,7 @@ var configuration = configurationBuilder.Build();
 
 // Serilog
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
+    .ReadFrom.Configuration(configuration)
     .CreateLogger();
 
 // Bot Services
@@ -40,6 +42,8 @@ serviceCollections.AddSingleton<IChatReceiver, DiscordReceiver>();
 serviceCollections.Configure<AppConfig>(configuration.GetSection("AppConfig"));
 serviceCollections.Configure<OpenAIConfig>(configuration.GetSection("OpenAIConfig"));
 
+serviceCollections.AddHttpClient();
+
 var serviceProvider = serviceCollections.BuildServiceProvider();
 
 using CancellationTokenSource cts = new();
@@ -54,7 +58,6 @@ await Task.Factory.StartNew(async () =>
     }
 });
 
-Log.Information("Press Ctrl + C to cancel!");
 Console.CancelKeyPress += ((s, a) =>
 {
     a.Cancel = true;

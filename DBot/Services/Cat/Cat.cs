@@ -12,9 +12,7 @@ public class Cat : ICommand
         {
             return await Task.FromResult(new ImageResponse("https://cataas.com/cat", ""));
         }
-        else
-        {
-            return await Task.FromResult(new ImageResponse($"https://cataas.com/cat/says/{request.Message}", ""));
-        }
+
+        return await Task.FromResult(new ImageResponse($"https://cataas.com/cat/says/{request.Message}", ""));
     }
 }

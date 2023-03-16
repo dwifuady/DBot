@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/Dbot.Telegram/Dbot.Telegram.csproj",
+                "${workspaceFolder}/Dbot.Console/DBot.Console.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/Dbot.Telegram/Dbot.Telegram.csproj",
+                "${workspaceFolder}/Dbot.Console/DBot.Console.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/Dbot.Telegram/Dbot.Telegram.csproj"
+                "${workspaceFolder}/Dbot.Console/DBot.Console.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

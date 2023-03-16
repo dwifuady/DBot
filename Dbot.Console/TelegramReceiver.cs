@@ -56,7 +56,7 @@ public class TelegramReceiver : IChatReceiver
 
         var chatId = message.Chat.Id;
 
-        Log.Information("Received a '{messageText}' message in chat {chatId}.", messageText, chatId);
+        Log.Information("[Telegram] Received a '{messageText}' message in chat {chatId}.", messageText, chatId);
 
         var service = _commands?.FirstOrDefault(x => x.Command.Split('|').Any(c => messageText.Split(" ")[0].Equals(c, StringComparison.InvariantCultureIgnoreCase)));
         var i = messageText.IndexOf(" ", StringComparison.Ordinal) + 1;

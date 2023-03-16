@@ -12,11 +12,13 @@ public class DiscordReceiver : IChatReceiver
     private readonly AppConfig? _appConfig;
     private readonly IEnumerable<ICommand> _commands;
     private DiscordSocketClient? _client;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public DiscordReceiver(IOptions<AppConfig> options, IEnumerable<ICommand> commands)
+    public DiscordReceiver(IOptions<AppConfig> options, IEnumerable<ICommand> commands, IHttpClientFactory httpClientFactory)
     {
         _appConfig = options?.Value;
         _commands = commands;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task StartReceiving(CancellationToken cancellationToken)
@@ -69,11 +71,11 @@ public class DiscordReceiver : IChatReceiver
         
         if (message.Channel is SocketGuildChannel socketGuildChannel)
         {
-            Log.Information("[Discord] Received a '{messageText}' message in chat {ServerName} > {ChannelName}.", message.Content, socketGuildChannel.Guild.Name, message.Channel.Name);
+            Log.Information("[Discord] Received a '{messageText}' message from {user} in chat {ServerName} > {ChannelName}.", message.Content, message.Author.Username, socketGuildChannel.Guild.Name, message.Channel.Name);
         }
         else
         {
-            Log.Information("[Discord] Received a '{messageText}' message in chat {ChannelName}.", message.Content, message.Channel.Name);
+            Log.Information("[Discord] Received a '{messageText}' message from {user} in chat {ChannelName}.", message.Content, message.Author.Username, message.Channel.Name);
         }
 
 
@@ -99,13 +101,23 @@ public class DiscordReceiver : IChatReceiver
             {
                 case ITextResponse textResponse:
                 {
-                    await message.Channel.SendMessageAsync(textResponse?.Message);
+                    await message.Channel.SendMessageAsync(textResponse?.Message, messageReference: new MessageReference(messageId: message.Id));
                     break;
                 }
                 case IImageResponse imageResponse:
                 {
-                    //temporary
-                    await message.Channel.SendMessageAsync(imageResponse?.SourceUrl);
+                    if (!string.IsNullOrWhiteSpace(imageResponse?.SourceUrl))
+                    {
+                        
+                        if (!await SendFile(imageResponse.SourceUrl, message))
+                        {
+                            await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
+                        }
+                    }
+                    else
+                    {
+                        await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
+                    }
                     break;
                 }
             }
@@ -126,4 +138,27 @@ public class DiscordReceiver : IChatReceiver
                 Log.Information("An ID has been received that has no handler!");
         }
     }
+
+
+    private async Task<bool> SendFile(string url, SocketMessage message)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            using var result = await client.GetAsync(url);
+            if (!result.IsSuccessStatusCode) return false;
+
+            var content = await result.Content.ReadAsStreamAsync();
+
+            await message.Channel.SendFileAsync(new FileAttachment(content, $@"{Guid.NewGuid()}.jpg"), messageReference: new MessageReference(messageId: message.Id));
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed sending image");
+            return false;
+        }
+    }
+    
 }

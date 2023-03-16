@@ -42,6 +42,8 @@ serviceCollections.AddSingleton<IChatReceiver, DiscordReceiver>();
 serviceCollections.Configure<AppConfig>(configuration.GetSection("AppConfig"));
 serviceCollections.Configure<OpenAIConfig>(configuration.GetSection("OpenAIConfig"));
 
+serviceCollections.AddHttpClient();
+
 var serviceProvider = serviceCollections.BuildServiceProvider();
 
 using CancellationTokenSource cts = new();

@@ -29,7 +29,7 @@ public class DiscordReceiver : IChatReceiver
 
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildMembers,
             AlwaysDownloadUsers = false
         };
 
@@ -50,7 +50,7 @@ public class DiscordReceiver : IChatReceiver
 
     private Task ReadyAsync()
     {
-        Log.Information("{CurrentUser} is connected!", _client.CurrentUser);
+        Log.Information("{CurrentUser} is connected!", _client?.CurrentUser);
 
         return Task.CompletedTask;
     }
@@ -64,8 +64,17 @@ public class DiscordReceiver : IChatReceiver
     private async Task MessageReceivedAsync(SocketMessage message)
     {
         // The bot should never respond to itself.
-        if (message.Author.Id == _client.CurrentUser.Id)
+        if (message.Author.Id == _client?.CurrentUser.Id)
             return;
+        
+        if (message.Channel is SocketGuildChannel socketGuildChannel)
+        {
+            Log.Information("[Discord] Received a '{messageText}' message in chat {ServerName} > {ChannelName}.", message.Content, socketGuildChannel.Guild.Name, message.Channel.Name);
+        }
+        else
+        {
+            Log.Information("[Discord] Received a '{messageText}' message in chat {ChannelName}.", message.Content, message.Channel.Name);
+        }
 
 
         //if (message.Content == "!ping")

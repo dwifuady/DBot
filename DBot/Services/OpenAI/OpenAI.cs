@@ -24,7 +24,7 @@ public class OpenAI : ICommand
             var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
                     GetMessages(request.Message),
                     0.5,
-                    307,
+                    500,
                     0.3,
                     0.5,
                     0);
@@ -46,20 +46,21 @@ public class OpenAI : ICommand
             {
                 Message = "I am confuse. Could you try to ask another question?"
             };
-
         }
         catch (Exception e)
         {
             Log.Error(e, "Error getting response from OpenAI");
             return new TextResponse
             {
-                Message = @"I am sorry, I can't think right now :(
-Please try again later."
+                Message = """
+                I am sorry, I can't think right now :(
+                Please try again later.
+                """
             };
         }
     }
 
-    private IReadOnlyList<OpenAIMessage> GetMessages(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetMessages(string requestMessage)
     {
         return new List<OpenAIMessage>
         {

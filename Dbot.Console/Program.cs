@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
-
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 
 var configurationBuilder = new ConfigurationBuilder()
@@ -16,7 +15,7 @@ var configurationBuilder = new ConfigurationBuilder()
             .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables();
 
-if (environment is not null && environment.Equals("Development", StringComparison.InvariantCultureIgnoreCase))
+if (environment?.Equals("Development", StringComparison.InvariantCultureIgnoreCase) == true)
 {
     configurationBuilder.AddUserSecrets<AppConfig>(optional: true, reloadOnChange: true);
 }
@@ -51,18 +50,17 @@ var closingEvent = new AutoResetEvent(false);
 
 await Task.Factory.StartNew(async () =>
 {
-    var receivers = serviceProvider.GetServices<IChatReceiver>();
-    foreach (var chatReceiver in receivers)
+    foreach (var chatReceiver in serviceProvider.GetServices<IChatReceiver>())
     {
         await chatReceiver.StartReceiving(cts.Token);
     }
 });
 
-Console.CancelKeyPress += ((s, a) =>
+Console.CancelKeyPress += (s, a) =>
 {
     a.Cancel = true;
     closingEvent.Set();
-});
+};
 
 closingEvent.WaitOne();
 

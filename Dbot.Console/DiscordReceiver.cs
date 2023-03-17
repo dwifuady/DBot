@@ -32,10 +32,10 @@ public class DiscordReceiver : IChatReceiver
 
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.DirectMessages | 
-                            GatewayIntents.MessageContent | 
-                            GatewayIntents.GuildMembers | 
-                            GatewayIntents.GuildMessages | 
+            GatewayIntents = GatewayIntents.DirectMessages |
+                            GatewayIntents.MessageContent |
+                            GatewayIntents.GuildMembers |
+                            GatewayIntents.GuildMessages |
                             GatewayIntents.Guilds |
                             GatewayIntents.GuildIntegrations,
             AlwaysDownloadUsers = false
@@ -51,7 +51,6 @@ public class DiscordReceiver : IChatReceiver
 
         _client.MessageReceived += MessageReceivedAsync;
         _client.InteractionCreated += InteractionCreatedAsync;
-        
 
         await Task.Delay(-1, cancellationToken);
     }
@@ -79,10 +78,9 @@ public class DiscordReceiver : IChatReceiver
             case LogSeverity.Verbose:
                 Log.Verbose("[{Provider}] " + logMessage.Message, ProviderName);
                 break;
-            case LogSeverity.Info:
             default:
                 Log.Information("[{Provider}] " + logMessage.Message, ProviderName);
-            break;
+                break;
         }
 
         return Task.CompletedTask;
@@ -93,7 +91,7 @@ public class DiscordReceiver : IChatReceiver
         // The bot should never respond to itself.
         if (message.Author.Id == _client?.CurrentUser.Id)
             return;
-        
+
         if (message.Channel is SocketGuildChannel socketGuildChannel)
         {
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {ServerName} > {ChannelName}.", ProviderName, message.Content, message.Author.Username, socketGuildChannel.Guild.Name, message.Channel.Name);
@@ -102,7 +100,6 @@ public class DiscordReceiver : IChatReceiver
         {
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {ChannelName}.", ProviderName, message.Content, message.Author.Username, message.Channel.Name);
         }
-
 
         //if (message.Content == "!ping")
         //{
@@ -133,7 +130,6 @@ public class DiscordReceiver : IChatReceiver
                 {
                     if (!string.IsNullOrWhiteSpace(imageResponse?.SourceUrl))
                     {
-                        
                         if (!await SendFile(imageResponse.SourceUrl, message))
                         {
                             await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
@@ -158,12 +154,10 @@ public class DiscordReceiver : IChatReceiver
             // Check for the ID created in the button mentioned above.
             if (component.Data.CustomId == "unique-id")
                 await interaction.RespondAsync("Thank you for clicking my button!");
-
             else
                 Log.Information("An ID has been received that has no handler!");
         }
     }
-
 
     private async Task<bool> SendFile(string url, SocketMessage message)
     {
@@ -185,5 +179,4 @@ public class DiscordReceiver : IChatReceiver
             return false;
         }
     }
-    
 }

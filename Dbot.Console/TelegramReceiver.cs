@@ -63,7 +63,6 @@ public class TelegramReceiver : IChatReceiver
         if (service is not null)
         {
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {chatId}.", ProviderName, messageText, message.From?.Username , chatId);
-            
             var commandResponse = await service.ExecuteCommand(new Request(messageText.Substring(i)));
 
             switch (commandResponse)
@@ -73,8 +72,8 @@ public class TelegramReceiver : IChatReceiver
                         var sentMessage = await botClient.SendTextMessageAsync(
                             chatId: chatId,
                             text: textResponse?.Message ?? "",
-                            cancellationToken: cancellationToken, 
-                            replyToMessageId:message.MessageId);
+                            replyToMessageId: message.MessageId,
+                            cancellationToken: cancellationToken);
                         break;
                     }
                 case IImageResponse imageResponse:
@@ -84,14 +83,12 @@ public class TelegramReceiver : IChatReceiver
                             photo: imageResponse.SourceUrl,
                             caption: imageResponse.Caption,
                             parseMode: ParseMode.Html,
-                            cancellationToken: cancellationToken,
-                            replyToMessageId: message.MessageId
-                        );
+                            replyToMessageId: message.MessageId,
+                            cancellationToken: cancellationToken);
                         break;
                     }
             }
         }
-
     }
 
     private Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -106,5 +103,4 @@ public class TelegramReceiver : IChatReceiver
         Log.Error(errorMessage);
         return Task.CompletedTask;
     }
-
 }

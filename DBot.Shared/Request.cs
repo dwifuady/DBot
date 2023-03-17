@@ -12,7 +12,7 @@ public class Request
 
     public Request(IReadOnlyList<string> messages)
     {
-        Message = messages.LastOrDefault()!;
+        Message = messages.ToList().LastOrDefault()!;
         Messages = messages;
     }
 

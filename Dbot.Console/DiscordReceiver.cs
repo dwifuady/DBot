@@ -31,7 +31,12 @@ public class DiscordReceiver : IChatReceiver
 
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildMembers,
+            GatewayIntents = GatewayIntents.DirectMessages | 
+                            GatewayIntents.MessageContent | 
+                            GatewayIntents.GuildMembers | 
+                            GatewayIntents.GuildMessages | 
+                            GatewayIntents.Guilds |
+                            GatewayIntents.GuildIntegrations,
             AlwaysDownloadUsers = false
         };
 
@@ -52,14 +57,33 @@ public class DiscordReceiver : IChatReceiver
 
     private Task ReadyAsync()
     {
-        Log.Information("{CurrentUser} is connected!", _client?.CurrentUser);
+        Log.Information("[Discord] {CurrentUser} is connected!", _client?.CurrentUser);
 
         return Task.CompletedTask;
     }
 
     private Task DiscordLog(LogMessage logMessage)
     {
-        Log.Information(logMessage.Message);
+        switch(logMessage.Severity)
+        {
+            case LogSeverity.Warning:
+                Log.Warning($"[Discord] {logMessage.Message}");
+                break;
+            case LogSeverity.Error:
+                Log.Error(logMessage.Exception, $"[Discord] {logMessage.Message}");
+                break;
+            case LogSeverity.Debug:
+                Log.Debug($"[Discord] {logMessage.Message}");
+                break;
+            case LogSeverity.Verbose:
+                Log.Verbose($"[Discord] {logMessage.Message}");
+                break;
+            case LogSeverity.Info:
+            default:
+                Log.Information($"[Discord] {logMessage.Message}");
+            break;
+        }
+
         return Task.CompletedTask;
     }
 

@@ -13,6 +13,7 @@ public class DiscordReceiver : IChatReceiver
     private readonly IEnumerable<ICommand> _commands;
     private DiscordSocketClient? _client;
     private readonly IHttpClientFactory _httpClientFactory;
+    private const string ProviderName = "Discord";
 
     public DiscordReceiver(IOptions<AppConfig> options, IEnumerable<ICommand> commands, IHttpClientFactory httpClientFactory)
     {
@@ -57,7 +58,7 @@ public class DiscordReceiver : IChatReceiver
 
     private Task ReadyAsync()
     {
-        Log.Information("[Discord] {CurrentUser} is connected!", _client?.CurrentUser);
+        Log.Information("[{Provider}] {CurrentUser} is connected!", ProviderName, _client?.CurrentUser);
 
         return Task.CompletedTask;
     }
@@ -67,20 +68,20 @@ public class DiscordReceiver : IChatReceiver
         switch(logMessage.Severity)
         {
             case LogSeverity.Warning:
-                Log.Warning($"[Discord] {logMessage.Message}");
+                Log.Warning("[{Provider}] " + logMessage.Message, ProviderName);
                 break;
             case LogSeverity.Error:
-                Log.Error(logMessage.Exception, $"[Discord] {logMessage.Message}");
+                Log.Error(logMessage.Exception, "[{Provider}] " + logMessage.Message, ProviderName);
                 break;
             case LogSeverity.Debug:
-                Log.Debug($"[Discord] {logMessage.Message}");
+                Log.Debug("[{Provider}] " + logMessage.Message, ProviderName);
                 break;
             case LogSeverity.Verbose:
-                Log.Verbose($"[Discord] {logMessage.Message}");
+                Log.Verbose("[{Provider}] " + logMessage.Message, ProviderName);
                 break;
             case LogSeverity.Info:
             default:
-                Log.Information($"[Discord] {logMessage.Message}");
+                Log.Information("[{Provider}] " + logMessage.Message, ProviderName);
             break;
         }
 
@@ -95,11 +96,11 @@ public class DiscordReceiver : IChatReceiver
         
         if (message.Channel is SocketGuildChannel socketGuildChannel)
         {
-            Log.Information("[Discord] Received a '{messageText}' message from {user} in chat {ServerName} > {ChannelName}.", message.Content, message.Author.Username, socketGuildChannel.Guild.Name, message.Channel.Name);
+            Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {ServerName} > {ChannelName}.", ProviderName, message.Content, message.Author.Username, socketGuildChannel.Guild.Name, message.Channel.Name);
         }
         else
         {
-            Log.Information("[Discord] Received a '{messageText}' message from {user} in chat {ChannelName}.", message.Content, message.Author.Username, message.Channel.Name);
+            Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {ChannelName}.", ProviderName, message.Content, message.Author.Username, message.Channel.Name);
         }
 
 
@@ -180,7 +181,7 @@ public class DiscordReceiver : IChatReceiver
         }
         catch (Exception e)
         {
-            Log.Error(e, "Failed sending image");
+            Log.Error(e, "[{Provider}] Failed sending image", ProviderName);
             return false;
         }
     }

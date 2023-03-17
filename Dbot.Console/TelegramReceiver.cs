@@ -14,6 +14,8 @@ public class TelegramReceiver : IChatReceiver
 {
     private readonly AppConfig? _appConfig;
     private readonly IEnumerable<ICommand> _commands;
+    private const string ProviderName = "Telegram";
+
     public TelegramReceiver(IOptions<AppConfig> options, IEnumerable<ICommand> commands)
     {
         _appConfig = options?.Value;
@@ -24,7 +26,7 @@ public class TelegramReceiver : IChatReceiver
     {
         if (string.IsNullOrWhiteSpace(_appConfig?.TelegramToken))
         {
-            Log.Error("Telegram token is not set");
+            Log.Error("[{Provider}] Telegram token is not set", ProviderName);
             return;
         }
 
@@ -43,8 +45,7 @@ public class TelegramReceiver : IChatReceiver
         );
 
         var me = await botClient.GetMeAsync(cancellationToken);
-
-        Log.Information("[Telegram] Start listening for {UserName}", me.Username);
+        Log.Information("[{Provider}] {CurrentUser} is connected!", ProviderName, me.Username);
     }
 
     private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -61,7 +62,7 @@ public class TelegramReceiver : IChatReceiver
 
         if (service is not null)
         {
-            Log.Information("[Telegram] Received a '{messageText}' message from {user} in chat {chatId}.", messageText, message.From?.Username , chatId);
+            Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {chatId}.", ProviderName, messageText, message.From?.Username , chatId);
             
             var commandResponse = await service.ExecuteCommand(new Request(messageText.Substring(i)));
 

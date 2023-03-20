@@ -6,10 +6,10 @@ namespace DBot.Services.OpenAI;
 
 public class OpenAI : ICommand
 {
-    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "BOT", "AI,", "ENID", "IDEN", "WDYT", "KOMENTARIN" };
+    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA" };
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
-    private const string RoleAssistant = "assistant";
+    //private const string RoleAssistant = "assistant";
     private const string RoleUser = "user";
 
     public OpenAI(IOpenAIApi openAIApi)
@@ -21,7 +21,7 @@ public class OpenAI : ICommand
     {
         try
         {
-            var response = await GetChatCompletion(request.Args);
+            var response = await GetChatCompletion(request.Command, request.Args);
 
             if (response?.Choices != null)
             {
@@ -48,10 +48,10 @@ public class OpenAI : ICommand
         }
     }
 
-    private async Task<OpenAIResponse> GetChatCompletion(string message)
+    private async Task<OpenAIResponse> GetChatCompletion(string command, string message)
     {
         var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
-                GetChatCompletionMessages(message),
+                GetChatCompletionMessages(command, message),
                 0.5,
                 500,
                 0.3,
@@ -67,12 +67,81 @@ public class OpenAI : ICommand
         return response;
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetChatCompletionMessages(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetChatCompletionMessages(string command, string requestMessage)
+    {
+        return command.ToUpper() switch
+        {
+            "AI" => GetDefaultMessage(requestMessage),
+            "ENID" => GetEnIdMessage(requestMessage),
+            "IDEN" => GetIdEnMessage(requestMessage),
+            "WDYT" => GetWdytMessage(requestMessage),
+            "KOMENTARIN" or "KOMENIN" or "KOMENNYA" => GetWdytIdMessage(requestMessage),
+            "KAKBOT" => GetFriendlyAssistantMessage(requestMessage),
+            "PAKBOT" => GetGrumpyAssistantMessage(requestMessage),
+            _ => GetDefaultMessage(requestMessage)
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetDefaultMessage(string requestMessage)
     {
         return new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a helpful assistant."),
+            new(RoleSystem, "You are a funny and helpful assistant."),
             new(RoleUser, requestMessage)
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetFriendlyAssistantMessage(string requestMessage)
+    {
+        return new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are a helpful and funny assistant who speaks Indonesia casually, not using formal language"),
+            new(RoleUser, requestMessage)
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetGrumpyAssistantMessage(string requestMessage)
+    {
+        return new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are a grumpy assistant who speaks Indonesia and answer the question with direct and short answer"),
+            new(RoleUser, requestMessage)
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetEnIdMessage(string requestMessage)
+    {
+        return new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are an Assistant who translate from English to Indonesian language."),
+            new(RoleUser, requestMessage)
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetIdEnMessage(string requestMessage)
+    {
+        return new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are an Assistant who translate from Indonesia to English language."),
+            new(RoleUser, requestMessage)
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetWdytMessage(string requestMessage)
+    {
+        return new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are a funny Assistant who always give funny comment about everything"),
+            new(RoleUser, $"What do you think about this: '{requestMessage}'")
+        };
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetWdytIdMessage(string requestMessage)
+    {
+        return new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are a funny Assistant who always give funny comment about everything"),
+            new(RoleUser, $"Apa komentar kamu tentang ini: '{requestMessage}'")
         };
     }
 }

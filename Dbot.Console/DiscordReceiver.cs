@@ -116,6 +116,13 @@ public class DiscordReceiver : IChatReceiver
         var request = message
             .Content
             .Parse<Request>();
+
+        // todo, improve and move this to extensions
+        if (await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
+        {
+            request.UpdateArgs(referencedMessage.CleanContent);
+        }
+
         var service = _commands?.FirstOrDefault(x => x.AcceptedCommands.Contains(request.Command, StringComparer.OrdinalIgnoreCase));
         if (service is not null)
         {

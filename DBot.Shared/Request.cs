@@ -11,8 +11,21 @@ public sealed class Request : IRequest, IParsable<Request>
     }
 
     public string Command { get; }
-    public string Args { get; }
+    public string Args { get; private set;}
     public string Message { get; }
+
+    public bool UpdateArgs(string newArgs)
+    {
+        try
+        {
+            Args = newArgs;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public static Request Parse(string s, IFormatProvider? provider)
     {

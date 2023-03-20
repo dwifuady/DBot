@@ -4,9 +4,9 @@ namespace DBot.Services.HelloWorld;
 
 public class HelloWorld : ICommand
 {
-    public string Command => "/hello";
+    public IReadOnlyList<string> AcceptedCommands => new List<string> { "/hello" };
 
-    public async Task<IResponse> ExecuteCommand(Request request)
+    public async Task<IResponse> ExecuteCommand(IRequest request)
     {
         var response =  new TextResponse
         {

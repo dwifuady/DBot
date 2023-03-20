@@ -2,6 +2,6 @@ namespace DBot.Shared;
 
 public interface ICommand
 {
-    string Command { get; }
-    Task<IResponse> ExecuteCommand(Request request);
+    IReadOnlyList<string> AcceptedCommands { get; }
+    Task<IResponse> ExecuteCommand(IRequest request);
 }

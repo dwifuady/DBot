@@ -64,22 +64,23 @@ public class DiscordReceiver : IChatReceiver
 
     private Task DiscordLog(LogMessage logMessage)
     {
+        (string message, string propertyValue) message = new ("[{Provider}] " + logMessage.Message, ProviderName);
         switch(logMessage.Severity)
         {
             case LogSeverity.Warning:
-                Log.Warning("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Warning(message.message, message.propertyValue);
                 break;
             case LogSeverity.Error:
-                Log.Error(logMessage.Exception, "[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Error(logMessage.Exception, message.message, message.propertyValue);
                 break;
             case LogSeverity.Debug:
-                Log.Debug("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Debug(message.message, message.propertyValue);
                 break;
             case LogSeverity.Verbose:
-                Log.Verbose("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Verbose(message.message, message.propertyValue);
                 break;
             default:
-                Log.Information("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Information(message.message, message.propertyValue);
                 break;
         }
 
@@ -112,12 +113,13 @@ public class DiscordReceiver : IChatReceiver
         //    await message.Channel.SendMessageAsync("pong!", components: cb.Build());
         //}
 
-        var service = _commands?.FirstOrDefault(x => x.Command.Split('|').Any(c => message.Content.Split(" ")[0].Equals(c, StringComparison.InvariantCultureIgnoreCase)));
-        var i = message.Content.IndexOf(" ", StringComparison.Ordinal) + 1;
-
+        var request = message
+            .Content
+            .Parse<Request>();
+        var service = _commands?.FirstOrDefault(x => x.AcceptedCommands.Contains(request.Command, StringComparer.OrdinalIgnoreCase));
         if (service is not null)
         {
-            var commandResponse = await service.ExecuteCommand(new Request(message.Content.Substring(i)));
+            var commandResponse = await service.ExecuteCommand(request);
 
             switch (commandResponse)
             {
@@ -132,12 +134,12 @@ public class DiscordReceiver : IChatReceiver
                     {
                         if (!await SendFile(imageResponse.SourceUrl, message))
                         {
-                            await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
+                            await message.Channel.SendMessageAsync("Error generating your image, please try again later.", messageReference: new MessageReference(messageId: message.Id));
                         }
                     }
                     else
                     {
-                        await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
+                        await message.Channel.SendMessageAsync("Error generating your image, please try again later.", messageReference: new MessageReference(messageId: message.Id));
                     }
                     break;
                 }

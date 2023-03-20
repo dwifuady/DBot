@@ -1,21 +1,53 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace DBot.Shared;
-public class Request
+public sealed class Request : IRequest, IParsable<Request>
 {
-    public Request(string message)
+    private Request(string message, string command, string args)
     {
         Message = message;
-        Messages = new List<string>
-        {
-            message
-        };
+        Command = command;
+        Args = args;
     }
 
-    public Request(IReadOnlyList<string> messages)
-    {
-        Message = messages.ToList().LastOrDefault()!;
-        Messages = messages;
-    }
-
+    public string Command { get; }
+    public string Args { get; }
     public string Message { get; }
-    public IReadOnlyList<string> Messages { get; }
+
+    public static Request Parse(string s, IFormatProvider? provider)
+    {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            throw new Exception("Message can't be empty");
+        }
+
+        string[] strings = s.Split(new[] {',',' ', ':'});
+        if (strings.Length < 1)
+        {
+            throw new OverflowException($"Invalid input parameter {s}");
+        }
+
+        string command = strings[0];
+        var i = s.IndexOf(strings?.FirstOrDefault(x => x == " ") ?? " ", StringComparison.Ordinal) + 1;
+
+        return new Request(s, command, s[i..]);
+    }
+
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Request result)
+    {
+        result = null;
+        if (s == null)
+        {
+            return false;
+        }
+        try
+        {
+            result = Parse(s, provider);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

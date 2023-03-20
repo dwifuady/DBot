@@ -6,7 +6,7 @@ namespace DBot.Services.OpenAI;
 
 public class OpenAI : ICommand
 {
-    public string Command => "AI|BOT|AI,";
+    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "BOT", "AI,", "ENID", "IDEN", "WDYT", "KOMENTARIN" };
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
     private const string RoleAssistant = "assistant";
@@ -17,23 +17,11 @@ public class OpenAI : ICommand
         _openAIApi = openAIApi;
     }
 
-    public async Task<IResponse> ExecuteCommand(Request request)
+    public async Task<IResponse> ExecuteCommand(IRequest request)
     {
         try
         {
-            var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
-                    GetMessages(request.Message),
-                    0.5,
-                    500,
-                    0.3,
-                    0.5,
-                    0);
-
-            Log.Information("OpenAI Request {request}", JsonSerializer.Serialize(openAIRequest));
-
-            var response = await _openAIApi.ChatCompletion(openAIRequest);
-
-            Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
+            var response = await GetChatCompletion(request.Args);
 
             if (response?.Choices != null)
             {
@@ -60,13 +48,30 @@ public class OpenAI : ICommand
         }
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetMessages(string requestMessage)
+    private async Task<OpenAIResponse> GetChatCompletion(string message)
+    {
+        var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
+                GetChatCompletionMessages(message),
+                0.5,
+                500,
+                0.3,
+                0.5,
+                0);
+
+        Log.Information("OpenAI Request {request}", JsonSerializer.Serialize(openAIRequest));
+
+        var response = await _openAIApi.ChatCompletion(openAIRequest);
+
+        Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
+
+        return response;
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetChatCompletionMessages(string requestMessage)
     {
         return new List<OpenAIMessage>
         {
             new(RoleSystem, "You are a helpful assistant."),
-            new(RoleUser, "Who won the world series in 2020?"),
-            new(RoleAssistant, "The Los Angeles Dodgers won the World Series in 2020."),
             new(RoleUser, requestMessage)
         };
     }

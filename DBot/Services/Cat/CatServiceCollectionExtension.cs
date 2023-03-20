@@ -8,6 +8,6 @@ public static class CatServiceCollectionExtension
     public static IServiceCollection AddCat(this IServiceCollection services)
     {
         services.AddTransient<ICommand, Cat>();
-        return services;   
+        return services;
     }
 }

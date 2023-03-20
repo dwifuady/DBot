@@ -32,10 +32,10 @@ public class DiscordReceiver : IChatReceiver
 
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.DirectMessages | 
-                            GatewayIntents.MessageContent | 
-                            GatewayIntents.GuildMembers | 
-                            GatewayIntents.GuildMessages | 
+            GatewayIntents = GatewayIntents.DirectMessages |
+                            GatewayIntents.MessageContent |
+                            GatewayIntents.GuildMembers |
+                            GatewayIntents.GuildMessages |
                             GatewayIntents.Guilds |
                             GatewayIntents.GuildIntegrations,
             AlwaysDownloadUsers = false
@@ -51,7 +51,6 @@ public class DiscordReceiver : IChatReceiver
 
         _client.MessageReceived += MessageReceivedAsync;
         _client.InteractionCreated += InteractionCreatedAsync;
-        
 
         await Task.Delay(-1, cancellationToken);
     }
@@ -65,24 +64,24 @@ public class DiscordReceiver : IChatReceiver
 
     private Task DiscordLog(LogMessage logMessage)
     {
+        (string message, string propertyValue) message = new ("[{Provider}] " + logMessage.Message, ProviderName);
         switch(logMessage.Severity)
         {
             case LogSeverity.Warning:
-                Log.Warning("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Warning(message.message, message.propertyValue);
                 break;
             case LogSeverity.Error:
-                Log.Error(logMessage.Exception, "[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Error(logMessage.Exception, message.message, message.propertyValue);
                 break;
             case LogSeverity.Debug:
-                Log.Debug("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Debug(message.message, message.propertyValue);
                 break;
             case LogSeverity.Verbose:
-                Log.Verbose("[{Provider}] " + logMessage.Message, ProviderName);
+                Log.Verbose(message.message, message.propertyValue);
                 break;
-            case LogSeverity.Info:
             default:
-                Log.Information("[{Provider}] " + logMessage.Message, ProviderName);
-            break;
+                Log.Information(message.message, message.propertyValue);
+                break;
         }
 
         return Task.CompletedTask;
@@ -93,7 +92,7 @@ public class DiscordReceiver : IChatReceiver
         // The bot should never respond to itself.
         if (message.Author.Id == _client?.CurrentUser.Id)
             return;
-        
+
         if (message.Channel is SocketGuildChannel socketGuildChannel)
         {
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {ServerName} > {ChannelName}.", ProviderName, message.Content, message.Author.Username, socketGuildChannel.Guild.Name, message.Channel.Name);
@@ -102,7 +101,6 @@ public class DiscordReceiver : IChatReceiver
         {
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {ChannelName}.", ProviderName, message.Content, message.Author.Username, message.Channel.Name);
         }
-
 
         //if (message.Content == "!ping")
         //{
@@ -115,12 +113,20 @@ public class DiscordReceiver : IChatReceiver
         //    await message.Channel.SendMessageAsync("pong!", components: cb.Build());
         //}
 
-        var service = _commands?.FirstOrDefault(x => x.Command.Split('|').Any(c => message.Content.Split(" ")[0].Equals(c, StringComparison.InvariantCultureIgnoreCase)));
-        var i = message.Content.IndexOf(" ", StringComparison.Ordinal) + 1;
+        var request = message
+            .Content
+            .Parse<Request>();
 
+        // todo, improve and move this to extensions
+        if (await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
+        {
+            request.UpdateArgs(referencedMessage.CleanContent);
+        }
+
+        var service = _commands?.FirstOrDefault(x => x.AcceptedCommands.Contains(request.Command, StringComparer.OrdinalIgnoreCase));
         if (service is not null)
         {
-            var commandResponse = await service.ExecuteCommand(new Request(message.Content.Substring(i)));
+            var commandResponse = await service.ExecuteCommand(request);
 
             switch (commandResponse)
             {
@@ -133,15 +139,14 @@ public class DiscordReceiver : IChatReceiver
                 {
                     if (!string.IsNullOrWhiteSpace(imageResponse?.SourceUrl))
                     {
-                        
                         if (!await SendFile(imageResponse.SourceUrl, message))
                         {
-                            await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
+                            await message.Channel.SendMessageAsync("Error generating your image, please try again later.", messageReference: new MessageReference(messageId: message.Id));
                         }
                     }
                     else
                     {
-                        await message.Channel.SendMessageAsync("I am sorry, i can't find any cute cat for you :(", messageReference: new MessageReference(messageId: message.Id));
+                        await message.Channel.SendMessageAsync("Error generating your image, please try again later.", messageReference: new MessageReference(messageId: message.Id));
                     }
                     break;
                 }
@@ -158,12 +163,10 @@ public class DiscordReceiver : IChatReceiver
             // Check for the ID created in the button mentioned above.
             if (component.Data.CustomId == "unique-id")
                 await interaction.RespondAsync("Thank you for clicking my button!");
-
             else
                 Log.Information("An ID has been received that has no handler!");
         }
     }
-
 
     private async Task<bool> SendFile(string url, SocketMessage message)
     {
@@ -185,5 +188,4 @@ public class DiscordReceiver : IChatReceiver
             return false;
         }
     }
-    
 }

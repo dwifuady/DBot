@@ -57,14 +57,15 @@ public class TelegramReceiver : IChatReceiver
 
         var chatId = message.Chat.Id;
 
-        var service = _commands?.FirstOrDefault(x => x.Command.Split('|').Any(c => messageText.Split(" ")[0].Equals(c, StringComparison.InvariantCultureIgnoreCase)));
+        var request = messageText
+            .Parse<Request>();
+        var service = _commands?.FirstOrDefault(x => x.AcceptedCommands.Contains(request.Command, StringComparer.OrdinalIgnoreCase));
         var i = messageText.IndexOf(" ", StringComparison.Ordinal) + 1;
 
         if (service is not null)
         {
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {chatId}.", ProviderName, messageText, message.From?.Username , chatId);
-            
-            var commandResponse = await service.ExecuteCommand(new Request(messageText.Substring(i)));
+            var commandResponse = await service.ExecuteCommand(request);
 
             switch (commandResponse)
             {
@@ -73,8 +74,8 @@ public class TelegramReceiver : IChatReceiver
                         var sentMessage = await botClient.SendTextMessageAsync(
                             chatId: chatId,
                             text: textResponse?.Message ?? "",
-                            cancellationToken: cancellationToken, 
-                            replyToMessageId:message.MessageId);
+                            replyToMessageId: message.MessageId,
+                            cancellationToken: cancellationToken);
                         break;
                     }
                 case IImageResponse imageResponse:
@@ -84,14 +85,12 @@ public class TelegramReceiver : IChatReceiver
                             photo: imageResponse.SourceUrl,
                             caption: imageResponse.Caption,
                             parseMode: ParseMode.Html,
-                            cancellationToken: cancellationToken,
-                            replyToMessageId: message.MessageId
-                        );
+                            replyToMessageId: message.MessageId,
+                            cancellationToken: cancellationToken);
                         break;
                     }
             }
         }
-
     }
 
     private Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -106,5 +105,4 @@ public class TelegramReceiver : IChatReceiver
         Log.Error(errorMessage);
         return Task.CompletedTask;
     }
-
 }

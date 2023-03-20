@@ -4,15 +4,15 @@ namespace DBot.Services.Cat;
 
 public class Cat : ICommand
 {
-    public string Command => "cat:|kucing:";
+    public IReadOnlyList<string> AcceptedCommands => new List<string> { "CAT:", "KUCING:", "CAT", "KUCING" };
 
-    public async Task<IResponse> ExecuteCommand(Request request)
+    public async Task<IResponse> ExecuteCommand(IRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Message))
+        if (string.IsNullOrWhiteSpace(request.Args))
         {
             return await Task.FromResult(new ImageResponse("https://cataas.com/cat", ""));
         }
 
-        return await Task.FromResult(new ImageResponse($"https://cataas.com/cat/says/{request.Message}", ""));
+        return await Task.FromResult(new ImageResponse($"https://cataas.com/cat/says/{request.Args}", ""));
     }
 }

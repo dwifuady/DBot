@@ -9,7 +9,7 @@ public class OpenAI : ICommand
     public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA" };
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
-    //private const string RoleAssistant = "assistant";
+    private const string RoleAssistant = "assistant";
     private const string RoleUser = "user";
 
     public OpenAI(IOpenAIApi openAIApi)
@@ -114,6 +114,8 @@ public class OpenAI : ICommand
         return new List<OpenAIMessage>
         {
             new(RoleSystem, "You are an Assistant who translate from English to Indonesian language."),
+            new(RoleUser, "Good Morning"),
+            new(RoleAssistant, "Selamat Pagi"),
             new(RoleUser, requestMessage)
         };
     }
@@ -123,6 +125,8 @@ public class OpenAI : ICommand
         return new List<OpenAIMessage>
         {
             new(RoleSystem, "You are an Assistant who translate from Indonesia to English language."),
+            new(RoleUser, "Selamat Pagi"),
+            new(RoleAssistant, "Good Morning"),
             new(RoleUser, requestMessage)
         };
     }

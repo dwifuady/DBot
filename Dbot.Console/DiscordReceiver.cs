@@ -118,7 +118,7 @@ public class DiscordReceiver : IChatReceiver
             .Parse<Request>();
 
         // todo, improve and move this to extensions
-        if (await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
+        if (message?.Reference?.MessageId is not null && await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
         {
             request.UpdateArgs(referencedMessage.CleanContent);
         }

@@ -59,8 +59,13 @@ public class TelegramReceiver : IChatReceiver
 
         var request = messageText
             .Parse<Request>();
+
+        if (message.ReplyToMessage is { Text: {} repliedMessageText} repliedMessage)
+        {
+            request.UpdateArgs(repliedMessageText);
+        }
+
         var service = _commands?.FirstOrDefault(x => x.AcceptedCommands.Contains(request.Command, StringComparer.OrdinalIgnoreCase));
-        var i = messageText.IndexOf(" ", StringComparison.Ordinal) + 1;
 
         if (service is not null)
         {

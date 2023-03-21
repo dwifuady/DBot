@@ -118,7 +118,7 @@ public class DiscordReceiver : IChatReceiver
             .Parse<Request>();
 
         // todo, improve and move this to extensions
-        if (message?.Reference?.MessageId is not null && await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
+        if (message.Reference?.MessageId is not null && await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
         {
             request.UpdateArgs(referencedMessage.CleanContent);
         }
@@ -178,7 +178,7 @@ public class DiscordReceiver : IChatReceiver
 
             var content = await result.Content.ReadAsStreamAsync();
 
-            await message.Channel.SendFileAsync(new FileAttachment(content, $@"{Guid.NewGuid()}.jpg"), messageReference: new MessageReference(messageId: message.Id));
+            await message.Channel.SendFileAsync(new FileAttachment(content, $"{Guid.NewGuid()}.jpg"), messageReference: new MessageReference(messageId: message.Id));
 
             return true;
         }

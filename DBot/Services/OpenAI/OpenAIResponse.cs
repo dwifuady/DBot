@@ -46,4 +46,3 @@ using System.Text.Json.Serialization;
         [JsonPropertyName("total_tokens")]
         public int TotalTokens { get; set; }
     }
-

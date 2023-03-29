@@ -8,10 +8,7 @@ public class HelloWorld : ICommand
 
     public async Task<IResponse> ExecuteCommand(IRequest request)
     {
-        var response =  new TextResponse
-        {
-            Message = $"Hello world. You said {request.Message}"
-        };
+        var response =  new TextResponse(true, $"Hello world. You said {request.Message}");
         return await Task.FromResult(response);
     }
 }

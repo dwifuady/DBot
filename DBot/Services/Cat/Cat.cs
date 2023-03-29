@@ -10,9 +10,9 @@ public class Cat : ICommand
     {
         if (string.IsNullOrWhiteSpace(request.Args))
         {
-            return await Task.FromResult(new ImageResponse("https://cataas.com/cat", ""));
+            return await Task.FromResult(new ImageResponse(true, "https://cataas.com/cat", ""));
         }
 
-        return await Task.FromResult(new ImageResponse($"https://cataas.com/cat/says/{request.Args}", ""));
+        return await Task.FromResult(new ImageResponse(true, $"https://cataas.com/cat/says/{request.Args}", ""));
     }
 }

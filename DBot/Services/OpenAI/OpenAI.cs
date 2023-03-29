@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DBot.Shared;
 using Serilog;
+using static DBot.Shared.Request;
 
 namespace DBot.Services.OpenAI;
 
@@ -21,37 +22,29 @@ public class OpenAI : ICommand
     {
         try
         {
-            var response = await GetChatCompletion(request.Command, request.Args);
+            var response = await GetChatCompletion(request.Command, request.Messages);
 
             if (response?.Choices != null)
             {
-                return new TextResponse{
-                    Message = response?.Choices?.FirstOrDefault()?.Message?.Content ?? ""
-                };
+                return new TextResponse(true, response?.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
             }
 
-            return new TextResponse
-            {
-                Message = "I am confuse. Could you try to ask another question?"
-            };
+            return new TextResponse(false, "I am confuse. Could you try to ask another question?");
         }
         catch (Exception e)
         {
             Log.Error(e, "Error getting response from OpenAI");
-            return new TextResponse
-            {
-                Message = """
+            return new TextResponse(false, """
                 I am sorry, I can't think right now :(
                 Please try again later.
-                """
-            };
+                """);
         }
     }
 
-    private async Task<OpenAIResponse> GetChatCompletion(string command, string message)
+    private async Task<OpenAIResponse> GetChatCompletion(string command, IEnumerable<RequestMessage> requestMessages)
     {
         var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
-                GetChatCompletionMessages(command, message),
+                GetChatCompletionMessages(command, requestMessages),
                 0.5,
                 500,
                 0.3,
@@ -67,50 +60,75 @@ public class OpenAI : ICommand
         return response;
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetChatCompletionMessages(string command, string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetChatCompletionMessages(string command, IEnumerable<RequestMessage> requestMessages)
     {
         return command.ToUpper() switch
         {
-            "AI" => GetDefaultMessage(requestMessage),
-            "ENID" => GetEnIdMessage(requestMessage),
-            "IDEN" => GetIdEnMessage(requestMessage),
-            "WDYT" => GetWdytMessage(requestMessage),
-            "KOMENTARIN" or "KOMENIN" or "KOMENNYA" => GetWdytIdMessage(requestMessage),
-            "KAKBOT" => GetFriendlyAssistantMessage(requestMessage),
-            "PAKBOT" => GetGrumpyAssistantMessage(requestMessage),
-            _ => GetDefaultMessage(requestMessage)
+            "AI" => GetDefaultMessage(requestMessages),
+            "ENID" => GetEnIdMessage(requestMessages),
+            "IDEN" => GetIdEnMessage(requestMessages),
+            "WDYT" => GetWdytMessage(requestMessages),
+            "KOMENTARIN" or "KOMENIN" or "KOMENNYA" => GetWdytIdMessage(requestMessages),
+            "KAKBOT" => GetFriendlyAssistantMessage(requestMessages),
+            "PAKBOT" => GetGrumpyAssistantMessage(requestMessages),
+            _ => GetDefaultMessage(requestMessages)
         };
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetDefaultMessage(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetDefaultMessage(IEnumerable<RequestMessage> requestMessages)
     {
-        return new List<OpenAIMessage>
+        var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a funny and helpful assistant."),
-            new(RoleUser, requestMessage)
+            new(RoleSystem, "You are a funny and helpful assistant.")
         };
-    }
 
-    private static IReadOnlyList<OpenAIMessage> GetFriendlyAssistantMessage(string requestMessage)
-    {
-        return new List<OpenAIMessage>
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
         {
-            new(RoleSystem, "You are a helpful and funny assistant who speaks Indonesia casually, not using formal language"),
-            new(RoleUser, requestMessage)
-        };
+            message.Add(new(GetRole(requestMessage.Sender), requestMessage.Message));
+        }
+
+        return message;
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetGrumpyAssistantMessage(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetFriendlyAssistantMessage(IEnumerable<RequestMessage> requestMessages)
     {
-        return new List<OpenAIMessage>
+        var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a grumpy assistant who speaks Indonesia and answer the question with direct and short answer"),
-            new(RoleUser, requestMessage)
+            new(RoleSystem, "You are a helpful and funny assistant who speaks Indonesia casually, not using formal language")
         };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            message.Add(new(GetRole(requestMessage.Sender), requestMessage.Message));
+        }
+
+        return message;
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetEnIdMessage(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetGrumpyAssistantMessage(IEnumerable<RequestMessage> requestMessages)
     {
+        var message = new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are a grumpy assistant who speaks Indonesia and answer the question with direct and short answer")
+        };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            message.Add(new(GetRole(requestMessage.Sender), requestMessage.Message));
+        }
+
+        return message;
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetEnIdMessage(IEnumerable<RequestMessage> requestMessages)
+    {
+        var requestMessage = requestMessages.OrderBy(x => x.Sequence).FirstOrDefault(x => x.Sender == Sender.User)?.Message;
+
+        if (string.IsNullOrWhiteSpace(requestMessage))
+        {
+            throw new Exception("No message to translate");
+        }
+
         return new List<OpenAIMessage>
         {
             new(RoleSystem, "You are an Assistant who translate from English to Indonesian language."),
@@ -120,8 +138,15 @@ public class OpenAI : ICommand
         };
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetIdEnMessage(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetIdEnMessage(IEnumerable<RequestMessage> requestMessages)
     {
+        var requestMessage = requestMessages.OrderBy(x => x.Sequence).FirstOrDefault(x => x.Sender == Sender.User)?.Message;
+
+        if (string.IsNullOrWhiteSpace(requestMessage))
+        {
+            throw new Exception("No message to translate");
+        }
+
         return new List<OpenAIMessage>
         {
             new(RoleSystem, "You are an Assistant who translate from Indonesia to English language."),
@@ -131,21 +156,53 @@ public class OpenAI : ICommand
         };
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetWdytMessage(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetWdytMessage(IEnumerable<RequestMessage> requestMessages)
     {
-        return new List<OpenAIMessage>
+        var message = new List<OpenAIMessage>
         {
             new(RoleSystem, "You are a funny Assistant who always give funny comment about everything"),
-            new(RoleUser, $"What do you think about this: '{requestMessage}'")
         };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            var msg = requestMessage.Message;
+            if (requestMessage.Sequence == 1 && requestMessage.Sender == Sender.User)
+            {
+                msg = $"What do you think about this: '{requestMessage.Message}'";
+            }
+            message.Add(new(GetRole(requestMessage.Sender), msg));
+        }
+
+        return message;
     }
 
-    private static IReadOnlyList<OpenAIMessage> GetWdytIdMessage(string requestMessage)
+    private static IReadOnlyList<OpenAIMessage> GetWdytIdMessage(IEnumerable<RequestMessage> requestMessages)
     {
-        return new List<OpenAIMessage>
+        var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a funny Assistant who always give funny comment about everything"),
-            new(RoleUser, $"Apa komentar kamu tentang ini: '{requestMessage}'")
+            new(RoleSystem, "You are a funny Assistant who always give funny comment about everything")
+        };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            var msg = requestMessage.Message;
+            if (requestMessage.Sequence == 1 && requestMessage.Sender == Sender.User)
+            {
+                msg = $"Apa komentar kamu tentang ini: '{requestMessage.Message}'";
+            }
+            message.Add(new(GetRole(requestMessage.Sender), msg));
+        }
+
+        return message;
+    }
+
+    private static string GetRole(Sender sender)
+    {
+        return sender switch
+        {
+            Sender.Bot => RoleAssistant,
+            Sender.User => RoleUser,
+            _ => RoleUser
         };
     }
 }

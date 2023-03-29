@@ -72,6 +72,7 @@ public class TelegramReceiver : IChatReceiver
         Message? repliedMsg = null;
         var initialCommand = request.Command;
         Conversation? previousChat = null;
+        bool isConversation = false;
 
         if (message.ReplyToMessage is { Text: { } repliedMessageText} repliedMessage)
         {
@@ -79,10 +80,13 @@ public class TelegramReceiver : IChatReceiver
             {
                 request.UpdateArgs(repliedMessageText);
             }
+            else
+            {
+                isConversation = true;
+            }
             repliedMsg = repliedMessage;
         }
-
-        if (repliedMsg is not null)
+        if (isConversation && repliedMsg is not null)
         {
             previousChat = _dbotContext?.Conversations?.FirstOrDefault(x => x.MessageId == repliedMsg.MessageId.ToString());
             if (previousChat is not null && !string.IsNullOrWhiteSpace(previousChat.InitialCommand))
@@ -97,43 +101,46 @@ public class TelegramReceiver : IChatReceiver
         if (service is not null)
         {
             var originalMessageId = message.MessageId.ToString();
-            string? parentId = null;
-            var messageContent = request.Args;
-
-            if (repliedMsg is not null)
+            if (isConversation || repliedMsg is null)
             {
-                originalMessageId = previousChat?.OriginalMessageId;
-                parentId = repliedMsg.MessageId.ToString();
-                messageContent = request.FullArgs;
-            }
+                string? parentId = null;
+                var messageContent = request.Args;
 
-            var conversation = new Conversation
-            {
-                InitialCommand = initialCommand,
-                Message = messageContent,
-                ParentId = parentId,
-                IsFromBot = false,
-                MessageId = originalMessageId,
-                OriginalMessageId = originalMessageId
-            };
-            _dbotContext!.Conversations?.Add(conversation);
-            await _dbotContext!.SaveChangesAsync(cancellationToken);
-
-            var conversations = _dbotContext?.Conversations?.ToList();
-
-            if (conversations?.Any() == true)
-            {
-                var messageChain = new List<RequestMessage>();
-                var sequence = 1;
-                foreach (var conver in conversations.Where(x => x.OriginalMessageId == conversation.OriginalMessageId).OrderBy(x => x.Id))
+                if (repliedMsg is not null)
                 {
-                    var sender = conver.IsFromBot ? Sender.Bot : Sender.User;
-                    var msg = new RequestMessage(sender, conver.Message!, sequence, conver.InitialCommand!);
-                    messageChain.Add(msg);
-                    sequence++;
+                    originalMessageId = previousChat?.OriginalMessageId;
+                    parentId = repliedMsg.MessageId.ToString();
+                    messageContent = request.FullArgs;
                 }
 
-                request.UpdateMessageChain(messageChain);
+                var conversation = new Conversation
+                {
+                    InitialCommand = initialCommand,
+                    Message = messageContent,
+                    ParentId = parentId,
+                    IsFromBot = false,
+                    MessageId = originalMessageId,
+                    OriginalMessageId = originalMessageId
+                };
+                _dbotContext!.Conversations?.Add(conversation);
+                await _dbotContext!.SaveChangesAsync(cancellationToken);
+
+                var conversations = _dbotContext?.Conversations?.ToList();
+
+                if (conversations?.Any() == true)
+                {
+                    var messageChain = new List<RequestMessage>();
+                    var sequence = 1;
+                    foreach (var conver in conversations.Where(x => x.OriginalMessageId == conversation.OriginalMessageId).OrderBy(x => x.Id))
+                    {
+                        var sender = conver.IsFromBot ? Sender.Bot : Sender.User;
+                        var msg = new RequestMessage(sender, conver.Message!, sequence, conver.InitialCommand!);
+                        messageChain.Add(msg);
+                        sequence++;
+                    }
+
+                    request.UpdateMessageChain(messageChain);
+                }
             }
 
             Log.Information("[{Provider}] Received a '{messageText}' message from {user} in chat {chatId}.", ProviderName, messageText, message.From?.Username , chatId);
@@ -149,7 +156,7 @@ public class TelegramReceiver : IChatReceiver
                             replyToMessageId: message.MessageId,
                             cancellationToken: cancellationToken);
 
-                        if (textResponse?.IsSupportConversation == true)
+                        if (textResponse?.IsSupportConversation == true && (isConversation || repliedMsg is null))
                         {
                             var botMessage = new Conversation
                             {

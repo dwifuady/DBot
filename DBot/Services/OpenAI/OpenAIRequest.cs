@@ -50,4 +50,3 @@ namespace DBot.Services.OpenAI;
         [JsonPropertyName("presence_penalty")]
         public int PresencePenalty { get; }
     }
-

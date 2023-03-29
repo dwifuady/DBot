@@ -6,6 +6,9 @@ using DBot.Console;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using static DBot.Shared.Request;
+using DBot.Console.Entities;
+using Microsoft.EntityFrameworkCore;
 
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 
@@ -42,6 +45,9 @@ serviceCollections.Configure<AppConfig>(configuration.GetSection("AppConfig"));
 serviceCollections.Configure<OpenAIConfig>(configuration.GetSection("OpenAIConfig"));
 
 serviceCollections.AddHttpClient();
+
+serviceCollections.AddDbContext<DbotContext>(opt => opt.UseInMemoryDatabase(databaseName: "DBot"));
+serviceCollections.AddScoped<DbotContext>();
 
 var serviceProvider = serviceCollections.BuildServiceProvider();
 

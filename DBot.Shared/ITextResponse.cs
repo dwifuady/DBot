@@ -2,5 +2,6 @@ namespace DBot.Shared;
 
 public interface ITextResponse : IResponse
 {
-    string? Message { get; set; }
+    string? Message { get; }
+    bool? IsSupportConversation { get; }
 }

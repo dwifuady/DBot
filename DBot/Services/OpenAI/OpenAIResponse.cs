@@ -46,3 +46,21 @@ using System.Text.Json.Serialization;
         [JsonPropertyName("total_tokens")]
         public int TotalTokens { get; set; }
     }
+
+    public class OpenAIError
+    {
+        [JsonPropertyName("error")]
+        public Error? Error { get; set; }
+    }
+
+    public class Error
+    {
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
+        [JsonPropertyName("type")]
+        public string? ErrorType { get; set; }
+        [JsonPropertyName("param")]
+        public string? ErrorParam { get; set; }
+        [JsonPropertyName("code")]
+        public string? ErrorCode { get; set; }
+    }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DBot.Shared;
+using Refit;
 using Serilog;
 using static DBot.Shared.Request;
 
@@ -22,11 +23,15 @@ public class OpenAI : ICommand
     {
         try
         {
-            var response = await GetChatCompletion(request.Command, request.Messages);
+            var (IsSuccess, Response, OpenAiErrorResponse) = await GetChatCompletion(request.Command, request.Messages);
 
-            if (response?.Choices != null)
+            if (IsSuccess && Response?.Choices != null)
             {
-                return new TextResponse(true, response?.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
+                return new TextResponse(true, Response.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
+            }
+            else if (!IsSuccess)
+            {
+                return new TextResponse(false, $"Sorry, there are issues when trying to get response from OpenAI api. Error: {OpenAiErrorResponse?.Error?.ErrorType}");
             }
 
             return new TextResponse(false, "I am confuse. Could you try to ask another question?");
@@ -41,7 +46,7 @@ public class OpenAI : ICommand
         }
     }
 
-    private async Task<OpenAIResponse> GetChatCompletion(string command, IEnumerable<RequestMessage> requestMessages)
+    private async Task<(bool IsSuccess, OpenAIResponse? Response, OpenAIError? error)> GetChatCompletion(string command, IEnumerable<RequestMessage> requestMessages)
     {
         var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
                 GetChatCompletionMessages(command, requestMessages),
@@ -53,11 +58,27 @@ public class OpenAI : ICommand
 
         Log.Information("OpenAI Request {request}", JsonSerializer.Serialize(openAIRequest));
 
-        var response = await _openAIApi.ChatCompletion(openAIRequest);
+        try
+        {
+            var response = await _openAIApi.ChatCompletion(openAIRequest);
+            Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
 
-        Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
-
-        return response;
+            return new (true, response, null);
+        }
+        catch (ApiException exception)
+        {
+            if (!string.IsNullOrWhiteSpace(exception?.Content))
+            {
+                var error = JsonSerializer.Deserialize<OpenAIError>(exception.Content);
+                Log.Error(exception, exception.Content);
+                return new (false, null, error);
+            }
+            else
+            {
+                Log.Error(exception, exception?.Message ?? string.Empty);
+                return new (false, null, new OpenAIError { Error = new Error { Message = exception?.Message} });
+            }
+        }
     }
 
     private static IReadOnlyList<OpenAIMessage> GetChatCompletionMessages(string command, IEnumerable<RequestMessage> requestMessages)

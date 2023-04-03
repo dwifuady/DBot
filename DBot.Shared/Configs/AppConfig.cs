@@ -2,6 +2,18 @@
 
 public class AppConfig
 {
-    public string? TelegramToken { get; set; }
-    public string? DiscordToken { get; set; }
+    public TelegramConfig? TelegramConfig { get; set; }
+    public DiscordConfig? DiscordConfig { get; set; }
+}
+
+public class DiscordConfig
+{
+    public string? Token { get; set; }
+    public bool Enable { get; set; }
+}
+
+public class TelegramConfig
+{
+    public string? Token { get; set; }
+    public bool Enable { get; set; }
 }

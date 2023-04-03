@@ -28,7 +28,13 @@ public class DiscordReceiver : IChatReceiver
 
     public async Task StartReceiving(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_appConfig?.DiscordToken))
+        if (_appConfig?.DiscordConfig?.Enable == false)
+        {
+            Log.Information("{ProviderName} is disabled", ProviderName);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_appConfig?.DiscordConfig?.Token))
         {
             Log.Error("Discord token is not set");
             return;
@@ -50,7 +56,7 @@ public class DiscordReceiver : IChatReceiver
         _client.Log += DiscordLog;
         _client.Ready += ReadyAsync;
 
-        await _client.LoginAsync(TokenType.Bot, _appConfig.DiscordToken);
+        await _client.LoginAsync(TokenType.Bot, _appConfig?.DiscordConfig?.Token);
         await _client.StartAsync();
 
         _client.MessageReceived += MessageReceivedAsync;

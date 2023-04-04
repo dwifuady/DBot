@@ -8,7 +8,7 @@ namespace DBot.Services.OpenAI;
 
 public class OpenAI : ICommand
 {
-    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA" };
+    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA", "CODEREVIEW", "CODEEXPLAIN" };
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
     private const string RoleAssistant = "assistant";
@@ -21,29 +21,23 @@ public class OpenAI : ICommand
 
     public async Task<IResponse> ExecuteCommand(IRequest request)
     {
-        try
+        if (request is null || request.Messages is null || request?.Messages?.Any() == false)
         {
-            var (IsSuccess, Response, OpenAiErrorResponse) = await GetChatCompletion(request.Command, request.Messages);
-
-            if (IsSuccess && Response?.Choices != null)
-            {
-                return new TextResponse(true, Response.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
-            }
-            else if (!IsSuccess)
-            {
-                return new TextResponse(false, $"Sorry, there are issues when trying to get response from OpenAI api. Error: {OpenAiErrorResponse?.Error?.ErrorType}");
-            }
-
-            return new TextResponse(false, "I am confuse. Could you try to ask another question?");
+            return new TextResponse(false, "Sorry, something went wrong. I can't see your message");
         }
-        catch (Exception e)
+
+        var (IsSuccess, Response, OpenAiErrorResponse) = await GetChatCompletion(request!.Command, request.Messages);
+
+        if (IsSuccess && Response?.Choices != null)
         {
-            Log.Error(e, "Error getting response from OpenAI");
-            return new TextResponse(false, """
-                I am sorry, I can't think right now :(
-                Please try again later.
-                """);
+            return new TextResponse(true, Response.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
         }
+        else if (!IsSuccess)
+        {
+            return new TextResponse(false, $"Sorry, there are issues when trying to get response from OpenAI api. Error: {OpenAiErrorResponse?.Error?.ErrorType}");
+        }
+
+        return new TextResponse(false, "I am confuse. Could you try to ask another question?");
     }
 
     private async Task<(bool IsSuccess, OpenAIResponse? Response, OpenAIError? error)> GetChatCompletion(string command, IEnumerable<RequestMessage> requestMessages)
@@ -92,6 +86,8 @@ public class OpenAI : ICommand
             "KOMENTARIN" or "KOMENIN" or "KOMENNYA" => GetWdytIdMessage(requestMessages),
             "KAKBOT" => GetFriendlyAssistantMessage(requestMessages),
             "PAKBOT" => GetGrumpyAssistantMessage(requestMessages),
+            "CODEREVIEW" => GetCodeReviewMessage(requestMessages),
+            "CODEEXPLAIN" => GetCodeExplainMessage(requestMessages),
             _ => GetDefaultMessage(requestMessages)
         };
     }
@@ -210,6 +206,46 @@ public class OpenAI : ICommand
             if (requestMessage.Sequence == 1 && requestMessage.Sender == Sender.User)
             {
                 msg = $"Apa komentar kamu tentang ini: '{requestMessage.Message}'";
+            }
+            message.Add(new(GetRole(requestMessage.Sender), msg));
+        }
+
+        return message;
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetCodeReviewMessage(IEnumerable<RequestMessage> requestMessages)
+    {
+        var message = new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are an Assistant who can review given code, give feedback based on best practice such as variable naming or others, do some refactoring, find possible bug and suggest solution to make the code better."),
+        };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            var msg = requestMessage.Message;
+            if (requestMessage.Sequence == 1 && requestMessage.Sender == Sender.User)
+            {
+                msg = $"Please review this code: '{requestMessage.Message}'";
+            }
+            message.Add(new(GetRole(requestMessage.Sender), msg));
+        }
+
+        return message;
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetCodeExplainMessage(IEnumerable<RequestMessage> requestMessages)
+    {
+        var message = new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are an Assistant who can explain given code or sql query clearly"),
+        };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            var msg = requestMessage.Message;
+            if (requestMessage.Sequence == 1 && requestMessage.Sender == Sender.User)
+            {
+                msg = $"Please explain this code: '{requestMessage.Message}'";
             }
             message.Add(new(GetRole(requestMessage.Sender), msg));
         }

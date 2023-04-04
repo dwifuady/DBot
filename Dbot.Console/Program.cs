@@ -1,14 +1,15 @@
 using DBot.Shared.Configs;
-using DBot.Services.HelloWorld;
-using DBot.Services.Cat;
-using DBot.Services.OpenAI;
 using DBot.Console;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using static DBot.Shared.Request;
 using DBot.Console.Entities;
 using Microsoft.EntityFrameworkCore;
+using DBot.Services.HelloWorld;
+using DBot.Services.Cat;
+using DBot.Services.OpenAI;
+using DBot.Services.ChuckNorris;
+using DBot.Services.DadJoke;
 
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 
@@ -34,7 +35,9 @@ Log.Logger = new LoggerConfiguration()
 var serviceCollections = new ServiceCollection()
     .AddHelloWorld()
     .AddCat()
-    .AddOpenAI();
+    .AddOpenAI()
+    .AddChuckNorris()
+    .AddDadJoke();
 
 // Chat Receiver
 serviceCollections.AddSingleton<IChatReceiver, TelegramReceiver>();

@@ -28,7 +28,13 @@ public class DiscordReceiver : IChatReceiver
 
     public async Task StartReceiving(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_appConfig?.DiscordToken))
+        if (_appConfig?.DiscordConfig?.Enable == false)
+        {
+            Log.Information("{ProviderName} is disabled", ProviderName);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_appConfig?.DiscordConfig?.Token))
         {
             Log.Error("Discord token is not set");
             return;
@@ -50,7 +56,7 @@ public class DiscordReceiver : IChatReceiver
         _client.Log += DiscordLog;
         _client.Ready += ReadyAsync;
 
-        await _client.LoginAsync(TokenType.Bot, _appConfig.DiscordToken);
+        await _client.LoginAsync(TokenType.Bot, _appConfig?.DiscordConfig?.Token);
         await _client.StartAsync();
 
         _client.MessageReceived += MessageReceivedAsync;
@@ -129,7 +135,7 @@ public class DiscordReceiver : IChatReceiver
         // todo, improve and move this to extensions
         if (message.Reference?.MessageId is not null && await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
         {
-            if (message.CleanContent.Split(' ')?.Length == 1)
+            if (message.CleanContent.Split(' ')?.Length == 1 && _commands.Any(c => c.AcceptedCommands.Contains(message.CleanContent.ToUpper())))
             {
                 request.UpdateArgs(referencedMessage.CleanContent);
             }
@@ -140,7 +146,7 @@ public class DiscordReceiver : IChatReceiver
             }
         }
 
-         if (isConversation && repliedMsg is not null)
+        if (isConversation && repliedMsg is not null)
         {
             previousChat = _dbotContext?.Conversations?.FirstOrDefault(x => x.MessageId == repliedMsg.Id.ToString());
             if (previousChat is not null && !string.IsNullOrWhiteSpace(previousChat.InitialCommand))

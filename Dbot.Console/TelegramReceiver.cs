@@ -29,13 +29,19 @@ public class TelegramReceiver : IChatReceiver
 
     public async Task StartReceiving(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_appConfig?.TelegramToken))
+        if (_appConfig?.TelegramConfig?.Enable == false)
+        {
+            Log.Information("{ProviderName} is disabled", ProviderName);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_appConfig?.TelegramConfig?.Token))
         {
             Log.Error("[{Provider}] Telegram token is not set", ProviderName);
             return;
         }
 
-        var botClient = new TelegramBotClient(_appConfig.TelegramToken);
+        var botClient = new TelegramBotClient(_appConfig.TelegramConfig.Token);
 
         ReceiverOptions receiverOptions = new()
         {
@@ -76,7 +82,7 @@ public class TelegramReceiver : IChatReceiver
 
         if (message.ReplyToMessage is { Text: { } repliedMessageText} repliedMessage)
         {
-            if (messageText.Split(' ')?.Length == 1 )
+            if (messageText.Split(' ')?.Length == 1 && _commands.Any(c => c.AcceptedCommands.Contains(messageText.ToUpper())))
             {
                 request.UpdateArgs(repliedMessageText);
             }

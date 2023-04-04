@@ -135,7 +135,7 @@ public class DiscordReceiver : IChatReceiver
         // todo, improve and move this to extensions
         if (message.Reference?.MessageId is not null && await message.Channel.GetMessageAsync(message.Reference.MessageId.Value) is {} referencedMessage)
         {
-            if (message.CleanContent.Split(' ')?.Length == 1)
+            if (message.CleanContent.Split(' ')?.Length == 1 && _commands.Any(c => c.AcceptedCommands.Contains(message.CleanContent.ToUpper())))
             {
                 request.UpdateArgs(referencedMessage.CleanContent);
             }
@@ -146,7 +146,7 @@ public class DiscordReceiver : IChatReceiver
             }
         }
 
-         if (isConversation && repliedMsg is not null)
+        if (isConversation && repliedMsg is not null)
         {
             previousChat = _dbotContext?.Conversations?.FirstOrDefault(x => x.MessageId == repliedMsg.Id.ToString());
             if (previousChat is not null && !string.IsNullOrWhiteSpace(previousChat.InitialCommand))

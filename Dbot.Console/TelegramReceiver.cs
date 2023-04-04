@@ -82,7 +82,7 @@ public class TelegramReceiver : IChatReceiver
 
         if (message.ReplyToMessage is { Text: { } repliedMessageText} repliedMessage)
         {
-            if (messageText.Split(' ')?.Length == 1 )
+            if (messageText.Split(' ')?.Length == 1 && _commands.Any(c => c.AcceptedCommands.Contains(messageText.ToUpper())))
             {
                 request.UpdateArgs(repliedMessageText);
             }

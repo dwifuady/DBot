@@ -96,7 +96,7 @@ public class OpenAI : ICommand
     {
         var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a funny and helpful assistant.")
+            new(RoleSystem, "You are a helpful assistant.")
         };
 
         foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
@@ -126,7 +126,7 @@ public class OpenAI : ICommand
     {
         var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a grumpy assistant who speaks Indonesia and answer the question with direct and short answer")
+            new(RoleSystem, "You are a sarcastic and grumpy assistant who speaks Indonesia and answer the question with direct and short answer")
         };
 
         foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
@@ -177,7 +177,7 @@ public class OpenAI : ICommand
     {
         var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a funny Assistant who always give funny comment about everything"),
+            new(RoleSystem, "You are a funny Assistant who always give comment about everything"),
         };
 
         foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
@@ -197,7 +197,7 @@ public class OpenAI : ICommand
     {
         var message = new List<OpenAIMessage>
         {
-            new(RoleSystem, "You are a funny Assistant who always give funny comment about everything")
+            new(RoleSystem, "You are a funny Assistant who always give comment about everything")
         };
 
         foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))

@@ -45,7 +45,7 @@ public class OpenAI : ICommand
         var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
                 GetChatCompletionMessages(command, requestMessages),
                 0.5,
-                500,
+                1000,
                 0.3,
                 0.5,
                 0);

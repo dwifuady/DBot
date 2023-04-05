@@ -17,6 +17,7 @@ public class DiscordReceiver : IChatReceiver
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly DbotContext _dbotContext;
     private const string ProviderName = "Discord";
+    private const int maxMessageLength = 1990; //max lenght is 2000, but we reduce this so we can add something like (1/3) prefix on every message
 
     public DiscordReceiver(IOptions<AppConfig> options, IEnumerable<ICommand> commands, IHttpClientFactory httpClientFactory, DbotContext dbotContext)
     {
@@ -74,7 +75,7 @@ public class DiscordReceiver : IChatReceiver
 
     private Task DiscordLog(LogMessage logMessage)
     {
-        (string message, string propertyValue) message = new ("[{Provider}] " + logMessage.Message, ProviderName);
+        (string message, string propertyValue) message = new ("[{Provider}] " + logMessage.Message + logMessage.Exception ?? "" + logMessage.Severity ?? "" + logMessage.Source ?? "", ProviderName);
         switch(logMessage.Severity)
         {
             case LogSeverity.Warning:
@@ -208,21 +209,38 @@ public class DiscordReceiver : IChatReceiver
             {
                 case ITextResponse textResponse:
                 {
-                    var sentMessage = await message.Channel.SendMessageAsync(textResponse?.Message, messageReference: new MessageReference(messageId: message.Id));
-
-                    if (textResponse?.IsSupportConversation == true && (isConversation || repliedMsg is null))
+                    var messages = textResponse.Message?.Chunk(maxMessageLength)
+                            .Select(s => new string(s))
+                            .ToList();
+                    if (messages?.Any() == true)
                     {
-                        var botMessage = new Conversation
+                        var messagesCount = messages.Count;
+                        int currentMessage = 1;
+                        foreach (var responseMessage in messages)
                         {
-                            InitialCommand = request.Command,
-                            Message = textResponse?.Message,
-                            ParentId = message.Id.ToString(),
-                            IsFromBot = true,
-                            MessageId = sentMessage.Id.ToString(),
-                            OriginalMessageId = originalMessageId
-                        };
-                        _dbotContext!.Conversations?.Add(botMessage);
-                        await _dbotContext!.SaveChangesAsync();
+                            var prefix = string.Empty;
+                            if (messagesCount > 1)
+                            {
+                                prefix = $"({currentMessage}/{messagesCount}) {Environment.NewLine}";
+                            }
+                            var sentMessage = await message.Channel.SendMessageAsync(prefix + responseMessage, messageReference: new MessageReference(messageId: message.Id));
+                            currentMessage++;
+
+                            if (textResponse?.IsSupportConversation == true && (isConversation || repliedMsg is null))
+                            {
+                                var botMessage = new Conversation
+                                {
+                                    InitialCommand = request.Command,
+                                    Message = responseMessage,
+                                    ParentId = message.Id.ToString(),
+                                    IsFromBot = true,
+                                    MessageId = sentMessage.Id.ToString(),
+                                    OriginalMessageId = originalMessageId
+                                };
+                                _dbotContext!.Conversations?.Add(botMessage);
+                                await _dbotContext!.SaveChangesAsync();
+                            }
+                        }
                     }
                     break;
                 }

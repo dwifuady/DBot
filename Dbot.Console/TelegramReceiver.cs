@@ -159,6 +159,7 @@ public class TelegramReceiver : IChatReceiver
                         var sentMessage = await botClient.SendTextMessageAsync(
                             chatId: chatId,
                             text: textResponse?.Message ?? "",
+                            parseMode: ParseMode.Markdown,
                             replyToMessageId: message.MessageId,
                             cancellationToken: cancellationToken);
 

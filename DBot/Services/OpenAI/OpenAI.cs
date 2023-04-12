@@ -8,7 +8,7 @@ namespace DBot.Services.OpenAI;
 
 public class OpenAI : ICommand
 {
-    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA", "CODEREVIEW", "CODEEXPLAIN" };
+    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA", "CODEREVIEW", "CODEEXPLAIN", "MESSAGEASSIST", "CHATASSIST" };
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
     private const string RoleAssistant = "assistant";
@@ -88,6 +88,7 @@ public class OpenAI : ICommand
             "PAKBOT" => GetGrumpyAssistantMessage(requestMessages),
             "CODEREVIEW" => GetCodeReviewMessage(requestMessages),
             "CODEEXPLAIN" => GetCodeExplainMessage(requestMessages),
+            "MESSAGEASSIST" or "CHATASSIST" => GetChatReviewMessage(requestMessages),
             _ => GetDefaultMessage(requestMessages)
         };
     }
@@ -248,6 +249,23 @@ public class OpenAI : ICommand
                 msg = $"Please explain this code: '{requestMessage.Message}'";
             }
             message.Add(new(GetRole(requestMessage.Sender), msg));
+        }
+
+        return message;
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetChatReviewMessage(IEnumerable<RequestMessage> requestMessages)
+    {
+        var message = new List<OpenAIMessage>
+        {
+            new(RoleSystem, "You are a personal assistant who help user writing and reviewing a message, email, or a chat."),
+            new(RoleUser, "You are my personal assistant who help me writing and reviewing a message, email, or a chat from me to other people. I am not really good at English, so I need your help to correct the grammar and make my sentences clear for the reader. are you ready?"),
+            new(RoleAssistant, "Yes, I'm ready to assist you! Please let me know what you need help with.")
+        };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            message.Add(new(GetRole(requestMessage.Sender), requestMessage.Message));
         }
 
         return message;

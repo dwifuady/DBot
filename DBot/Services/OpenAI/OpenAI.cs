@@ -8,7 +8,25 @@ namespace DBot.Services.OpenAI;
 
 public class OpenAI : ICommand
 {
-    public IReadOnlyList<string> AcceptedCommands => new List<string> { "AI", "KAKBOT", "PAKBOT", "ENID", "IDEN", "WDYT", "KOMENTARIN", "KOMENIN", "KOMENNYA", "CODEREVIEW", "CODEEXPLAIN", "MESSAGEASSIST", "CHATASSIST" };
+    public IReadOnlyList<string> AcceptedCommands => new List<string>
+    {
+        "AI",
+        "KAKBOT",
+        "PAKBOT",
+        "ENID",
+        "IDEN",
+        "WDYT",
+        "KOMENTARIN",
+        "KOMENIN",
+        "KOMENNYA",
+        "CODEREVIEW",
+        "CODEEXPLAIN",
+        "MESSAGEASSIST",
+        "CHATASSIST",
+        "JELASIN",
+        "ELI5ID"
+    };
+
     private readonly IOpenAIApi _openAIApi;
     private const string RoleSystem = "system";
     private const string RoleAssistant = "assistant";
@@ -89,6 +107,7 @@ public class OpenAI : ICommand
             "CODEREVIEW" => GetCodeReviewMessage(requestMessages),
             "CODEEXPLAIN" => GetCodeExplainMessage(requestMessages),
             "MESSAGEASSIST" or "CHATASSIST" => GetChatReviewMessage(requestMessages),
+            "ELI5ID" or "JELASIN" => GetELI5IdMessage(requestMessages),
             _ => GetDefaultMessage(requestMessages)
         };
     }
@@ -261,6 +280,22 @@ public class OpenAI : ICommand
             new(RoleSystem, "You are a personal assistant who help user writing and reviewing a message, email, or a chat."),
             new(RoleUser, "You are my personal assistant who help me writing and reviewing a message, email, or a chat from me to other people. I am not really good at English, so I need your help to correct the grammar and make my sentences clear for the reader. are you ready?"),
             new(RoleAssistant, "Yes, I'm ready to assist you! Please let me know what you need help with.")
+        };
+
+        foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))
+        {
+            message.Add(new(GetRole(requestMessage.Sender), requestMessage.Message));
+        }
+
+        return message;
+    }
+
+    private static IReadOnlyList<OpenAIMessage> GetELI5IdMessage(IEnumerable<RequestMessage> requestMessages)
+    {
+        var message = new List<OpenAIMessage>
+        {
+            new(RoleUser, "Aku akan memberikan topik atau pertanyaan. Jelaskan seolah olah aku adalah anak 5 tahun. Jelaskan dengan bahasa yang mudah dan sederhana, dengan contoh atau analogi yang sederhana."),
+            new(RoleAssistant, "Tentu, saya akan berusaha untuk menjelaskan dengan bahasa yang mudah dipahami dan memberikan contoh yang sederhana. Silakan berikan topik atau pertanyaannya.")
         };
 
         foreach (var requestMessage in requestMessages.OrderBy(x => x.Sequence))

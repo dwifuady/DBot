@@ -11,6 +11,7 @@ using DBot.Services.OpenAI;
 using DBot.Services.ChuckNorris;
 using DBot.Services.DadJoke;
 using DBot.Services.Dog;
+using DBot.Services.SiCepat;
 
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 
@@ -39,7 +40,8 @@ var serviceCollections = new ServiceCollection()
     .AddOpenAI()
     .AddChuckNorris()
     .AddDadJoke()
-    .AddDog();
+    .AddDog()
+    .AddSiCepat();
 
 // Chat Receiver
 serviceCollections.AddSingleton<IChatReceiver, TelegramReceiver>();

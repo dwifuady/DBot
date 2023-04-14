@@ -24,7 +24,8 @@ public class OpenAI : ICommand
         "MESSAGEASSIST",
         "CHATASSIST",
         "JELASIN",
-        "ELI5ID"
+        "ELI5ID",
+        "DRAW"
     };
 
     private readonly IOpenAIApi _openAIApi;
@@ -44,18 +45,36 @@ public class OpenAI : ICommand
             return new TextResponse(false, "Sorry, something went wrong. I can't see your message");
         }
 
-        var (IsSuccess, Response, OpenAiErrorResponse) = await GetChatCompletion(request!.Command, request.Messages);
-
-        if (IsSuccess && Response?.Choices != null)
+        if (string.Equals(request?.Command, "DRAW", StringComparison.OrdinalIgnoreCase))
         {
-            return new TextResponse(true, Response.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
-        }
-        else if (!IsSuccess)
-        {
-            return new TextResponse(false, $"Sorry, there are issues when trying to get response from OpenAI api. Error: {OpenAiErrorResponse?.Error?.ErrorType}");
-        }
+            var prompt = request!.Messages!.FirstOrDefault()!.Message;
+            var (IsSuccess, Response, OpenAiErrorResponse) = await GetImageGenerations(prompt);
+            if (IsSuccess && Response?.Data is not null && Response.Data.Any())
+            {
+                return new ImageResponse(true, Response.Data.FirstOrDefault()!.Url!, prompt);
+            }
+            else if (!IsSuccess)
+            {
+                return new TextResponse(false, $"Sorry, there are issues when trying to get response from OpenAI api. Error: {OpenAiErrorResponse?.Error?.ErrorType}");
+            }
 
-        return new TextResponse(false, "I am confuse. Could you try to ask another question?");
+            return new TextResponse(false, "I am confuse. Could you try to ask another question?");
+        }
+        else
+        {
+            var (IsSuccess, Response, OpenAiErrorResponse) = await GetChatCompletion(request!.Command, request.Messages);
+
+            if (IsSuccess && Response?.Choices != null)
+            {
+                return new TextResponse(true, Response.Choices?.FirstOrDefault()?.Message?.Content ?? "", true);
+            }
+            else if (!IsSuccess)
+            {
+                return new TextResponse(false, $"Sorry, there are issues when trying to get response from OpenAI api. Error: {OpenAiErrorResponse?.Error?.ErrorType}");
+            }
+
+            return new TextResponse(false, "I am confuse. Could you try to ask another question?");
+        }
     }
 
     private async Task<(bool IsSuccess, OpenAIResponse? Response, OpenAIError? error)> GetChatCompletion(string command, IEnumerable<RequestMessage> requestMessages)
@@ -75,6 +94,33 @@ public class OpenAI : ICommand
             var response = await _openAIApi.ChatCompletion(openAIRequest);
             Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
 
+            return new (true, response, null);
+        }
+        catch (ApiException exception)
+        {
+            if (!string.IsNullOrWhiteSpace(exception?.Content))
+            {
+                var error = JsonSerializer.Deserialize<OpenAIError>(exception.Content);
+                Log.Error(exception, exception.Content);
+                return new (false, null, error);
+            }
+            else
+            {
+                Log.Error(exception, exception?.Message ?? string.Empty);
+                return new (false, null, new OpenAIError { Error = new Error { Message = exception?.Message} });
+            }
+        }
+    }
+
+    private async Task<(bool IsSuccess, ImageGenerationResponse? Response, OpenAIError? Error)> GetImageGenerations(string prompt)
+    {
+        var openAIRequest = new ImageGenerationRequest(prompt, 1, "512x512");
+        Log.Information("OpenAI Request {request}", JsonSerializer.Serialize(openAIRequest));
+
+        try
+        {
+            var response = await _openAIApi.GenerateImages(openAIRequest);
+            Log.Information("OpenAI Response {response}", JsonSerializer.Serialize(response));
             return new (true, response, null);
         }
         catch (ApiException exception)

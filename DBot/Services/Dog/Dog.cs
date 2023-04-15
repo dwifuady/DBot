@@ -17,7 +17,7 @@ public class Dog : ICommand
         var dogApiResponse = await _dogApi.Get();
         if (dogApiResponse is not null && !string.IsNullOrWhiteSpace(dogApiResponse.Url))
         {
-            return new ImageResponse(true, dogApiResponse.Url, "");
+            return new FileResponse(true, dogApiResponse.Url, "");
         }
         else
         {

@@ -190,6 +190,40 @@ public class TelegramReceiver : IChatReceiver
                             cancellationToken: cancellationToken);
                         break;
                     }
+                case IFileResponse fileResponse:
+                {
+                    if (fileResponse.SourceUrl.EndsWith(".jpg"))
+                    {
+                        var sentMessage = await botClient.SendPhotoAsync(
+                                chatId: chatId,
+                                photo: fileResponse.SourceUrl,
+                                caption: fileResponse.Caption,
+                                parseMode: ParseMode.Html,
+                                replyToMessageId: message.MessageId,
+                                cancellationToken: cancellationToken);
+                    }
+                    else if (fileResponse.SourceUrl.EndsWith(".mp4"))
+                    {
+                        var sentMessage = await botClient.SendVideoAsync(
+                                chatId: chatId,
+                                video: fileResponse.SourceUrl,
+                                caption: fileResponse.Caption,
+                                parseMode: ParseMode.Html,
+                                replyToMessageId: message.MessageId,
+                                cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        var sentMessage = await botClient.SendDocumentAsync(
+                                chatId: chatId,
+                                document: fileResponse.SourceUrl,
+                                caption: fileResponse.Caption,
+                                parseMode: ParseMode.Html,
+                                replyToMessageId: message.MessageId,
+                                cancellationToken: cancellationToken);
+                    }
+                    break;
+                }
             }
         }
     }

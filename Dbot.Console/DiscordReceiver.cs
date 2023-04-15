@@ -244,11 +244,20 @@ public class DiscordReceiver : IChatReceiver
                     }
                     break;
                 }
-                case IImageResponse imageResponse:
+                case IFileResponse or IImageResponse:
                 {
-                    if (!string.IsNullOrWhiteSpace(imageResponse?.SourceUrl))
+                    var sourceUrl = string.Empty;
+                    if (commandResponse is IFileResponse fileResponse)
                     {
-                        if (!await SendFile(imageResponse.SourceUrl, message))
+                        sourceUrl = fileResponse.SourceUrl;
+                    }
+                    else if (commandResponse is IImageResponse imageResponse)
+                    {
+                        sourceUrl = imageResponse.SourceUrl;
+                    }
+                    if (!string.IsNullOrWhiteSpace(sourceUrl))
+                    {
+                        if (!await SendFile(sourceUrl, message))
                         {
                             await message.Channel.SendMessageAsync("Error generating your image, please try again later.", messageReference: new MessageReference(messageId: message.Id));
                         }
@@ -277,24 +286,50 @@ public class DiscordReceiver : IChatReceiver
         }
     }
 
-    private async Task<bool> SendFile(string url, SocketMessage message)
+    private async Task<bool> SendFile(string fileUrl, SocketMessage message)
     {
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            using var result = await client.GetAsync(url);
-            if (!result.IsSuccessStatusCode) return false;
+            var httpClient = _httpClientFactory.CreateClient();
+            var httpResponse = await httpClient.GetAsync(fileUrl);
 
-            var content = await result.Content.ReadAsStreamAsync();
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                return false;
+            }
 
-            await message.Channel.SendFileAsync(new FileAttachment(content, $"{Guid.NewGuid()}.jpg"), messageReference: new MessageReference(messageId: message.Id));
+            var contentType = httpResponse.Content.Headers.ContentType?.MediaType;
+
+            if (!contentType.StartsWith("image/") && !contentType.StartsWith("video/"))
+            {
+                Log.Error($"[{ProviderName}] Response from {fileUrl} was not an image or video");
+                return false;
+            }
+
+            var fileStream = await httpResponse.Content.ReadAsStreamAsync();
+            var fileExtension = GetFileExtension(contentType);
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+
+            await message.Channel.SendFileAsync(new FileAttachment(fileStream, fileName), messageReference: new MessageReference(message.Id));
 
             return true;
         }
-        catch (Exception e)
+        catch (HttpRequestException ex)
         {
-            Log.Error(e, "[{Provider}] Failed sending image", ProviderName);
-            return false;
+            Log.Error(ex, $"[{ProviderName}] Failed to download file from {fileUrl}");
+            throw;
         }
+    }
+
+    private static string GetFileExtension(string contentType)
+    {
+        return contentType switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/png" => ".png",
+            "video/mp4" => ".mp4",
+            // Add support for other file types as needed
+            _ => string.Empty,
+        };
     }
 }

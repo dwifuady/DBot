@@ -79,7 +79,7 @@ public class OpenAI : ICommand
 
     private async Task<(bool IsSuccess, OpenAIResponse? Response, OpenAIError? error)> GetChatCompletion(string command, IEnumerable<RequestMessage> requestMessages)
     {
-        var openAIRequest = new OpenAIRequest("gpt-3.5-turbo",
+        var openAIRequest = new OpenAIRequest("gpt-4-1106-preview",
                 GetChatCompletionMessages(command, requestMessages),
                 0.5,
                 1000,

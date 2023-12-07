@@ -114,7 +114,7 @@ public class OpenAI : ICommand
 
     private async Task<(bool IsSuccess, ImageGenerationResponse? Response, OpenAIError? Error)> GetImageGenerations(string prompt)
     {
-        var openAIRequest = new ImageGenerationRequest(prompt, 1, "512x512");
+        var openAIRequest = new ImageGenerationRequest("dall-e-3", prompt, 1, "1024x1024");
         Log.Information("OpenAI Request {request}", JsonSerializer.Serialize(openAIRequest));
 
         try
